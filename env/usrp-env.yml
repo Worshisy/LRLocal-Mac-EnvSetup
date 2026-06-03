@@ -1,0 +1,32 @@
+# Single Miniconda environment for ALL USRP / GNU Radio (GRC) work,
+# plus the LRLocal-V2 Python template branch (03-tag-template-gen-code).
+#
+# Per Yi's instruction: ONE conda env covers usrp + GRC; FT232 and RTK are
+# installed directly (their own venvs), not here.
+#
+# UHD is pinned to 4.9.x to match what the USRP_study_yishen host apps were
+# verified against (00-/01-/11- run-steps record UHD 4.9.0.0 under radioconda).
+# If conda-forge cannot solve the pin on this machine, 10-usrp-conda-env.sh
+# falls back to an unpinned uhd and prints a note.
+name: usrp
+channels:
+  - conda-forge
+dependencies:
+  # --- SDR runtime: UHD (driver + Python bindings) and GNU Radio (+ GRC, gr-uhd)
+  - uhd=4.9
+  - gnuradio          # metapackage: pulls gnuradio-core, grc, gnuradio-uhd, etc.
+  # --- C++ build toolchain for the multi_usrp host apps (00-/01-/11-/20-/30-/31-)
+  - cmake
+  - make
+  - ninja
+  - pkg-config
+  - clang_osx-arm64
+  - clangxx_osx-arm64
+  - libboost-devel    # Boost program_options (headers + lib) for the host apps
+  # --- Scientific Python: USRP analysis scripts + LRLocal-V2 03- Python branch
+  - numpy
+  - scipy
+  - matplotlib
+  - jupyter
+  - pandas
+  - tqdm
