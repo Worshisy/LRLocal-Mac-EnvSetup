@@ -38,6 +38,19 @@ source "$CONDA_SH"
 # Persist conda for future interactive shells (writes to ~/.zshrc once).
 conda init zsh >/dev/null 2>&1 || true
 
+# Use conda-forge ONLY. We never install from Anaconda's defaults channels.
+conda config --add channels conda-forge >/dev/null 2>&1 || true
+conda config --set channel_priority strict >/dev/null 2>&1 || true
+conda config --remove channels defaults >/dev/null 2>&1 || true
+
+# Recent Miniconda gates a fresh env create behind a non-interactive
+# Terms-of-Service check on the defaults channels (pkgs/main, pkgs/r) EVEN when
+# the env only uses conda-forge. Accept them up front so the solve proceeds;
+# the `|| true` keeps older conda (no `tos` subcommand) working.
+# (Hit + fixed on the Mac mini 2026-06-03.)
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main >/dev/null 2>&1 || true
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r    >/dev/null 2>&1 || true
+
 # ── 2. Create or update the env ───────────────────────────────────────────────
 say "Building the '$ENV_NAME' env from $ENV_YML"
 if conda env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
@@ -54,7 +67,11 @@ fi
 
 # ── 3. Verify ─────────────────────────────────────────────────────────────────
 say "Verifying the env"
+# conda's own activation scripts (e.g. activate_cctools_osx-arm64.sh) reference
+# unbound vars like $AR, so relax `set -u` while activating.
+set +u
 conda activate "$ENV_NAME"
+set -u
 ok "CONDA_PREFIX = $CONDA_PREFIX"
 command -v uhd_find_devices >/dev/null 2>&1 && ok "uhd_find_devices: $(command -v uhd_find_devices)" || warn "uhd_find_devices missing"
 command -v gnuradio-companion >/dev/null 2>&1 && ok "gnuradio-companion present (GRC GUI)" || warn "gnuradio-companion missing"

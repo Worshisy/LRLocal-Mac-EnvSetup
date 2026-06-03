@@ -15,7 +15,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 |---|---|---|
 | 00 | `00-base-tools.sh` | Xcode Command Line Tools, **Homebrew**, **libusb** |
 | 10 | `10-usrp-conda-env.sh` | **Miniconda** + the single `usrp` conda env (`env/usrp-env.yml`) |
-| 20 | `20-ft232-venv.sh` | `~/venvs/ft232` — `pyftdi numpy jupyter` (direct, not conda) |
+| 20 | `20-ft232-venv.sh` | `~/venvs/ft232` — `pyftdi numpy jupyter` + pip libusb (direct, no sudo) |
 | 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct, not conda) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
 
@@ -24,9 +24,18 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
   also carries the **LRLocal-V2 Python branch** (`03-tag-template-gen-code`)
   deps (jupyter/pandas/tqdm), so there's no separate env for that.
 - **FT232 and RTK are installed directly** in their own venvs, not in conda.
+  FT232 gets its libusb backend from a pip-bundled `libusb-package` when no
+  system libusb is present, so it needs **no sudo / no Homebrew**.
 - **UHD pinned to 4.9.x** in the env to match the version the USRP host apps
-  were verified against (radioconda UHD 4.9.0.0 in the run-steps). The installer
+  were verified against (run-steps record UHD 4.9.0.0). The installer
   auto-falls-back to unpinned UHD if conda-forge can't solve the pin here.
+
+> **Verified on a fresh Mac mini 2026-06-03:** steps 10/20/30 ran with no sudo;
+> the `usrp` env resolved **UHD 4.9.0.0 + GNU Radio 3.10.12 + gr-uhd**, a USRP
+> C++ host app (`rx_to_ssd_b200`) built & ran, and the attached **FT232H was
+> detected** via the pip libusb backend. Steps 00 (Homebrew) and 40 (remote
+> access) need sudo — run those interactively. **See [RUNBOOK.md](RUNBOOK.md)
+> for the full step-by-step (incl. MATLAB install + cloning the 4 repos).**
 
 ## Run it
 

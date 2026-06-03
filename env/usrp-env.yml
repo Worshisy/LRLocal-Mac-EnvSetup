@@ -11,6 +11,7 @@
 name: usrp
 channels:
   - conda-forge
+  - nodefaults        # don't touch Anaconda's defaults channels (avoids their ToS gate)
 dependencies:
   # --- SDR runtime: UHD (driver + Python bindings) and GNU Radio (+ GRC, gr-uhd)
   - uhd=4.9
