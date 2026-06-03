@@ -61,23 +61,32 @@ cd /tmp && unzip -oq gh.zip && mkdir -p ~/.local/bin && cp gh_${VER}_macOS_arm64
 ~/.local/bin/gh auth login      # GitHub.com → HTTPS → login with browser
 ~/.local/bin/gh auth status     # confirm: "Logged in to github.com"
 
-# IMPORTANT: make plain `git` clone/push private repos over HTTPS. Store the gh
-# token in the macOS Keychain (Apple's osxkeychain helper, the git default on
-# macOS). This works in a GUI Terminal and needs no gh at clone time.
+# IMPORTANT: make plain `git` clone/push private repos over HTTPS — including
+# over SSH sessions. Use a FILE-based credential store (no macOS Keychain), so
+# it works headless. This is the only approach that works over SSH.
 TOKEN=$(~/.local/bin/gh auth token)
-printf 'protocol=https\nhost=github.com\nusername=Worshisy\npassword=%s\n\n' "$TOKEN" | git credential-osxkeychain store
-printf 'protocol=https\nhost=gist.github.com\nusername=Worshisy\npassword=%s\n\n' "$TOKEN" | git credential-osxkeychain store
+printf 'https://Worshisy:%s@github.com\n' "$TOKEN" > ~/.git-credentials
+chmod 600 ~/.git-credentials
+# Use ONLY the file 'store' helper (the empty value drops macOS's default
+# osxkeychain helper, which errors -25308 in an SSH session):
+git config --global --unset-all credential.helper 2>/dev/null || true
+git config --global --add credential.helper ''
+git config --global --add credential.helper store
 ```
-(Alternative: set up an SSH key on the Mac and add it to your GitHub account.)
 
-> **Don't use `gh auth setup-git` here.** It points github.com *only* at the gh
-> credential helper, which must read gh's token from the Keychain at clone time —
-> and that read is blocked in a GUI Terminal, so `git clone https://…` falls back
-> to a username/password prompt and fails (`Password authentication is not
-> supported` / Keychain `-25308`). Storing the token in osxkeychain (above)
-> avoids that. If you already ran `gh auth setup-git`, undo it with:
-> `git config --global --unset-all credential.https://github.com.helper`
-> *(Hit + fixed on the Mac mini 2026-06-03.)*
+> **Why not the Keychain (`osxkeychain`) or `gh auth setup-git`?** Both read the
+> macOS **login Keychain**, which is **locked in an SSH session** (no GUI login
+> to unlock it) → `git clone` fails with `failed to get: -25308` and falls back
+> to a password prompt. They *appear* to work in a local GUI Terminal but break
+> the moment you SSH in. The file store above works in both. *(Hit + fixed on
+> the Mac mini 2026-06-03 — the machine is used over SSH.)*
+>
+> ⚠️ The token sits in **plaintext** at `~/.git-credentials` (mode 600 — only
+> your account). If others share this macOS account, they can read it; give
+> collaborators **separate accounts**, or use **SSH keys** instead:
+> `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""` then add `~/.ssh/id_ed25519.pub`
+> to GitHub (Settings ▸ SSH keys, or `gh auth refresh -s admin:public_key &&
+> gh ssh-key add ~/.ssh/id_ed25519.pub`) and clone via `git@github.com:Worshisy/<repo>.git`.
 
 ---
 
