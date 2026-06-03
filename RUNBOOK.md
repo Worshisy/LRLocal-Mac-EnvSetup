@@ -112,6 +112,10 @@ conda activate usrp
 > **Gotcha handled:** fresh Miniconda blocks `conda env create` behind an
 > Anaconda Terms-of-Service check on the `pkgs/main` / `pkgs/r` channels even
 > though we only use conda-forge. The script accepts those ToS automatically.
+>
+> **No auto-activate:** the script sets `auto_activate_base false`, so new
+> shells do **not** drop you into `base` — activate envs on demand with
+> `conda activate usrp`. (To re-enable: `conda config --set auto_activate_base true`.)
 
 ### Step 20 — FT232 venv ✅ verified (no sudo)
 `~/venvs/ft232` with `pyftdi numpy jupyter`; auto-installs a pip `libusb-package`

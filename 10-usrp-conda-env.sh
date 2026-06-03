@@ -38,6 +38,10 @@ source "$CONDA_SH"
 # Persist conda for future interactive shells (writes to ~/.zshrc once).
 conda init zsh >/dev/null 2>&1 || true
 
+# Do NOT auto-activate the base env in every new shell — keep the prompt clean
+# and only activate envs on demand (`conda activate usrp`). (Yi's preference.)
+conda config --set auto_activate_base false >/dev/null 2>&1 || true
+
 # Use conda-forge ONLY. We never install from Anaconda's defaults channels.
 conda config --add channels conda-forge >/dev/null 2>&1 || true
 conda config --set channel_priority strict >/dev/null 2>&1 || true
