@@ -1,8 +1,10 @@
-# Single Miniconda environment for ALL USRP / GNU Radio (GRC) work,
-# plus the LRLocal-V2 Python template branch (03-tag-template-gen-code).
+# Single Miniconda environment that can run ALL FOUR repos:
+#   * USRP / GNU Radio (GRC) work + the LRLocal-V2 Python branch
+#   * FT232_SCAN_IO (pyftdi + libusb)
+#   * RTK_dev_for_cm-loc (pyserial)
 #
-# Per Yi's instruction: ONE conda env covers usrp + GRC; FT232 and RTK are
-# installed directly (their own venvs), not here.
+# FT232 and RTK ALSO have their own direct venvs (~/venvs/ft232, ~/venvs/rtk);
+# this env duplicates their deps so either route works (Yi's request 2026-06-03).
 #
 # UHD is pinned to 4.9.x to match what the USRP_study_yishen host apps were
 # verified against (00-/01-/11- run-steps record UHD 4.9.0.0 under radioconda).
@@ -31,3 +33,8 @@ dependencies:
   - jupyter
   - pandas
   - tqdm
+  # --- FT232_SCAN_IO: FT232H scan-chain host driver
+  - pyftdi
+  - libusb            # USB backend pyftdi/pyusb need (conda-forge build)
+  # --- RTK_dev_for_cm-loc: u-blox RELPOSNED serial monitor
+  - pyserial

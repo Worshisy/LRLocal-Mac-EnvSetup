@@ -19,13 +19,13 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 | 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct, not conda) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
 
-### Environment design (per Yi's instructions)
-- **One Miniconda env** (`usrp`) for **all USRP + GNU Radio/GRC** work — and it
-  also carries the **LRLocal-V2 Python branch** (`03-tag-template-gen-code`)
-  deps (jupyter/pandas/tqdm), so there's no separate env for that.
-- **FT232 and RTK are installed directly** in their own venvs, not in conda.
-  FT232 gets its libusb backend from a pip-bundled `libusb-package` when no
-  system libusb is present, so it needs **no sudo / no Homebrew**.
+### Environment design
+- **One Miniconda env** (`usrp`) can run **all four repos**: USRP + GNU
+  Radio/GRC, the **LRLocal-V2 Python branch**, **FT232** (`pyftdi` + conda
+  `libusb`), and **RTK** (`pyserial`).
+- **FT232 and RTK also have their own direct venvs** (`~/venvs/ft232`,
+  `~/venvs/rtk`) — so either route works. FT232's venv uses a pip-bundled
+  `libusb-package` (no sudo / no Homebrew); the conda env uses conda's `libusb`.
 - **UHD pinned to 4.9.x** in the env to match the version the USRP host apps
   were verified against (run-steps record UHD 4.9.0.0). The installer
   auto-falls-back to unpinned UHD if conda-forge can't solve the pin here.
@@ -57,8 +57,8 @@ sudo password once (Homebrew); step 40 uses sudo for the remote-access toggles.
 |---|---|
 | **USRP_study_yishen** | `conda activate usrp`, then build each `NN-…/apps` (`cmake .. && make`) or run the Python tools — see each project's `notes/run-steps-sy.md`. `git submodule update --init --recursive` only if you need the UHD/GNU Radio **source** (several GB; for study/FPGA, not for running the host apps). |
 | **LRLocal-V2** | MATLAB side needs **MATLAB** (manual, below). Python branch: `conda activate usrp`, then `jupyter notebook` inside `03-tag-template-gen-code/`. |
-| **FT232_SCAN_IO** | `source ~/venvs/ft232/bin/activate`, plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python3 -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
-| **RTK_dev_for_cm-loc** | `source ~/venvs/rtk/bin/activate`, then `python3 relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
+| **FT232_SCAN_IO** | `source ~/venvs/ft232/bin/activate` **or** `conda activate usrp`, plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python3 -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
+| **RTK_dev_for_cm-loc** | `source ~/venvs/rtk/bin/activate` **or** `conda activate usrp`, then `python3 relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
 
 ## Manual prerequisites (licensed — NOT scripted)
 

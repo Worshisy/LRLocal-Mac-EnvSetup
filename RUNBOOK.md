@@ -214,6 +214,9 @@ Toolbox** and **Parallel Computing Toolbox** (the CFO sweeps use `parfor`).
 
 ## 7. Verify each repo
 
+> **Two ways to run FT232 / RTK:** their own venvs **or** the `usrp` conda env
+> (which now also carries `pyftdi`, `libusb`, and `pyserial`). Pick either.
+
 ```sh
 # USRP — conda env has the SDR stack
 conda activate usrp
@@ -223,11 +226,11 @@ python -c "import uhd, gnuradio; print(uhd.__version__)"
 # build a host app:
 cd ~/Projects/USRP_study_yishen/00-rx-to-ssd-b200/apps && mkdir -p build && cd build && cmake .. && make -j
 
-# FT232
+# FT232  (venv OR `conda activate usrp`)
 source ~/venvs/ft232/bin/activate
 python -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"   # expect ftdi://ftdi:232h:.../1
 
-# RTK
+# RTK  (venv OR `conda activate usrp`)
 source ~/venvs/rtk/bin/activate
 ls /dev/cu.usbmodem*        # find the rover port
 python ~/Projects/RTK_dev_for_cm-loc/relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX
@@ -236,6 +239,10 @@ python ~/Projects/RTK_dev_for_cm-loc/relposned_monitor.py --mode web --port /dev
 conda activate usrp
 cd ~/Projects/LRLocal-V2/03-tag-template-gen-code && jupyter notebook
 ```
+
+> Verified 2026-06-03 in the `usrp` env: `pyserial 3.5`, `pyftdi 0.55.4`
+> detecting the FT232H (`ftdi://ftdi:232h:1/1`) via conda's libusb — alongside
+> UHD 4.9.0.0 + GNU Radio 3.10.12.
 
 ---
 
