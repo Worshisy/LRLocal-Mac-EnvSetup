@@ -74,15 +74,29 @@ These can't be automated (licensing / size / non-redistributable) — install by
 
 ## Remote access (step 40)
 
-- **SSH:** `ssh <user>@<ip>` once Remote Login is on. Add collaborators' public
-  keys to `~/.ssh/authorized_keys`. The script prints this machine's user / host
-  / LAN IP.
+Run `./40-ssh-remote.sh` **as your normal user** (it calls sudo itself).
+**Screen Sharing** enables from the script; **Remote Login (SSH) usually needs
+one manual GUI step** (see below).
+
+- **Enable Remote Login (SSH) — easy way, no Full Disk Access needed:**
+  modern macOS refuses `systemsetup -setremotelogin on` from a script
+  (`...requires Full Disk Access privileges`). Instead:
+  1. **System Settings ▸ General ▸ Sharing**
+  2. Toggle **Remote Login** → **ON**
+  3. ⓘ next to it → "Allow access for" your user (or All users)
+
+  Re-running the script then shows `Remote Login already On`. *(Verified on the
+  Mac mini 2026-06-03.)*
+  > ⚠️ Don't grant **Terminal** Full Disk Access to force it — that only takes
+  > effect after you quit & reopen Terminal, which kills anything running in it
+  > (e.g. a Claude Code tab). The Sharing toggle needs neither FDA nor a restart.
+- **SSH in:** `ssh <user>@<ip>`. Add collaborators' public keys to
+  `~/.ssh/authorized_keys` (one per line). The script prints user / host / LAN IP.
 - **Screen Sharing (GUI):** connect to `vnc://<ip>` (Finder ▸ Go ▸ Connect to
-  Server, or the Screen Sharing app). Needed for GRC, Jupyter, and MATLAB GUIs.
-- macOS **privacy (TCC)** may refuse the toggles from a script. If so, grant the
-  Terminal app **Full Disk Access** (System Settings ▸ Privacy & Security), or
-  flip **Remote Login** / **Screen Sharing** in System Settings ▸ General ▸
-  Sharing. Off-LAN access additionally needs router port-forwarding or a VPN.
+  Server, or the Screen Sharing app). Needed for GRC, Jupyter, MATLAB GUIs.
+  If the script's `launchctl` path is refused, enable **Screen Sharing** in the
+  same *System Settings ▸ General ▸ Sharing* pane.
+- **Off-LAN** access additionally needs router port-forwarding or a VPN.
 
 ## Notes
 - Apple-Silicon (`arm64`) assumed throughout (Miniconda + libusb downloads).

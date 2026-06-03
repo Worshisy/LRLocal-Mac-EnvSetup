@@ -127,15 +127,35 @@ backend if no system libusb. Verified it **detected the attached FT232H**
 ./30-rtk-venv.sh
 ```
 
-### Step 40 — remote access ⚠️ needs sudo (run interactively)
+### Step 40 — remote access ⚠️ needs sudo (run interactively) ✅ verified
 Enables **SSH (Remote Login)** + **Screen Sharing (VNC)**, prepares
 `~/.ssh/authorized_keys`, and prints this Mac's user / IP for collaborators.
+Run it as your normal user (it calls sudo itself — **don't** prefix with sudo):
 ```sh
 ./40-ssh-remote.sh
 ```
-> macOS privacy (TCC) may refuse the toggles from a script — if so, flip
-> **Remote Login** and **Screen Sharing** in *System Settings ▸ General ▸
-> Sharing*, or grant Terminal *Full Disk Access* and re-run.
+
+**Screen Sharing** turns on from the script. **Remote Login (SSH) usually does
+NOT** — modern macOS requires the *calling Terminal app to have Full Disk
+Access* (a privacy/TCC permission) before `systemsetup -setremotelogin on` is
+allowed. You'll see:
+`setremotelogin: Turning Remote Login on or off requires Full Disk Access privileges.`
+
+**Enable Remote Login the easy way (no Full Disk Access needed):**
+1. **System Settings ▸ General ▸ Sharing**
+2. Toggle **Remote Login** → **ON**
+3. Click the ⓘ next to it → set "Allow access for" to your user (or All users)
+
+Then re-running `./40-ssh-remote.sh` reports `Remote Login already On`.
+*(This is the path verified on the Mac mini 2026-06-03.)*
+
+> ⚠️ **Avoid the Full Disk Access route if a session is running in your
+> Terminal.** Granting Terminal FDA only takes effect after you **quit and
+> reopen** Terminal — which kills anything running in it (e.g. a Claude Code
+> tab). The Sharing toggle above needs no FDA and no restart, so prefer it.
+
+> **Screen Sharing note:** if the `launchctl` path is refused, enable
+> **Screen Sharing** in the same *System Settings ▸ General ▸ Sharing* pane.
 
 ---
 
