@@ -116,15 +116,17 @@ WITH_SUBMODULES=1 ./clone-repos.sh ~/Projects
 
 What each step does and its state on the test machine:
 
-### Step 00 — base tools ⚠️ needs sudo (run interactively)
-Xcode CLT check, **Homebrew**, **libusb**. The Homebrew installer asks for your
-sudo password once, so run it yourself in a Terminal:
+### Step 00 — base tools ⚠️ needs sudo (run interactively) ✅ verified
+Xcode CLT check, **Homebrew**, **libusb**. This is the **default first step** —
+Homebrew is the system package manager and provides the libusb FT232 prefers.
+The Homebrew installer asks for your sudo password once, so run it yourself in a
+Terminal (as your normal user — **not** `sudo`):
 ```sh
 ./00-base-tools.sh
 ```
-> **Note:** With the no-sudo path below, FT232 (step 20) no longer *requires*
-> Homebrew's libusb — step 20 falls back to a pip-bundled libusb. Step 00 is
-> still nice to have (a real package manager) but is now optional for these 4.
+> FT232 (step 20) uses this system libusb when present, and only falls back to a
+> pip-bundled `libusb-package` if Homebrew isn't installed — so step 00 is the
+> preferred path, with the pip fallback as a safety net.
 
 ### Step 10 — Miniconda + the `usrp` conda env ✅ verified (no sudo)
 Installs Miniconda, then the single env from `env/usrp-env.yml`: **UHD 4.9**,

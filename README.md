@@ -24,8 +24,9 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
   Radio/GRC, the **LRLocal-V2 Python branch**, **FT232** (`pyftdi` + conda
   `libusb`), and **RTK** (`pyserial`).
 - **FT232 and RTK also have their own direct venvs** (`~/venvs/ft232`,
-  `~/venvs/rtk`) — so either route works. FT232's venv uses a pip-bundled
-  `libusb-package` (no sudo / no Homebrew); the conda env uses conda's `libusb`.
+  `~/venvs/rtk`) — so either route works. FT232's venv prefers the **Homebrew
+  libusb** (step 00, the default), falling back to a pip-bundled `libusb-package`
+  if Homebrew isn't present; the conda env uses conda's `libusb`.
 - **UHD pinned to 4.9.x** in the env to match the version the USRP host apps
   were verified against (run-steps record UHD 4.9.0.0). The installer
   auto-falls-back to unpinned UHD if conda-forge can't solve the pin here.
