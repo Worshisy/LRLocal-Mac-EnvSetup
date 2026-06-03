@@ -61,16 +61,23 @@ cd /tmp && unzip -oq gh.zip && mkdir -p ~/.local/bin && cp gh_${VER}_macOS_arm64
 ~/.local/bin/gh auth login      # GitHub.com → HTTPS → login with browser
 ~/.local/bin/gh auth status     # confirm: "Logged in to github.com"
 
-# IMPORTANT: wire plain `git` to use the gh token, so `git clone https://…`
-# works for private repos (not just `gh repo clone`). Without this you'll hit
-# "Password authentication is not supported" / a Keychain error (-25308).
-~/.local/bin/gh auth setup-git
+# IMPORTANT: make plain `git` clone/push private repos over HTTPS. Store the gh
+# token in the macOS Keychain (Apple's osxkeychain helper, the git default on
+# macOS). This works in a GUI Terminal and needs no gh at clone time.
+TOKEN=$(~/.local/bin/gh auth token)
+printf 'protocol=https\nhost=github.com\nusername=Worshisy\npassword=%s\n\n' "$TOKEN" | git credential-osxkeychain store
+printf 'protocol=https\nhost=gist.github.com\nusername=Worshisy\npassword=%s\n\n' "$TOKEN" | git credential-osxkeychain store
 ```
 (Alternative: set up an SSH key on the Mac and add it to your GitHub account.)
 
-> After `gh auth setup-git`, `git clone https://github.com/Worshisy/<repo>.git`
-> works directly — the helper is written with gh's full path, so it doesn't
-> depend on `gh` being on your PATH.
+> **Don't use `gh auth setup-git` here.** It points github.com *only* at the gh
+> credential helper, which must read gh's token from the Keychain at clone time —
+> and that read is blocked in a GUI Terminal, so `git clone https://…` falls back
+> to a username/password prompt and fails (`Password authentication is not
+> supported` / Keychain `-25308`). Storing the token in osxkeychain (above)
+> avoids that. If you already ran `gh auth setup-git`, undo it with:
+> `git config --global --unset-all credential.https://github.com.helper`
+> *(Hit + fixed on the Mac mini 2026-06-03.)*
 
 ---
 
