@@ -12,6 +12,13 @@ say()  { printf '\n\033[1;36m[00] %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 
+# Run as your NORMAL user, NOT sudo — Homebrew refuses to install as root and
+# calls sudo itself only where needed.
+if [ "$(id -u)" -eq 0 ]; then
+  warn "Don't run this with sudo. Run it as your normal user:  ./00-base-tools.sh"
+  exit 1
+fi
+
 # ── 1. Xcode Command Line Tools ───────────────────────────────────────────────
 say "Checking Xcode Command Line Tools"
 if xcode-select -p >/dev/null 2>&1; then
