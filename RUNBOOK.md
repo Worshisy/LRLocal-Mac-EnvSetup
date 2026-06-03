@@ -60,8 +60,17 @@ cd /tmp && unzip -oq gh.zip && mkdir -p ~/.local/bin && cp gh_${VER}_macOS_arm64
 
 ~/.local/bin/gh auth login      # GitHub.com → HTTPS → login with browser
 ~/.local/bin/gh auth status     # confirm: "Logged in to github.com"
+
+# IMPORTANT: wire plain `git` to use the gh token, so `git clone https://…`
+# works for private repos (not just `gh repo clone`). Without this you'll hit
+# "Password authentication is not supported" / a Keychain error (-25308).
+~/.local/bin/gh auth setup-git
 ```
 (Alternative: set up an SSH key on the Mac and add it to your GitHub account.)
+
+> After `gh auth setup-git`, `git clone https://github.com/Worshisy/<repo>.git`
+> works directly — the helper is written with gh's full path, so it doesn't
+> depend on `gh` being on your PATH.
 
 ---
 
