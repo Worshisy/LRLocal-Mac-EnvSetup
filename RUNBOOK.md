@@ -158,6 +158,19 @@ backend if no system libusb. Verified it **detected the attached FT232H**
 ./30-rtk-venv.sh
 ```
 
+### Step 50 — SCAN_sourcemeter venv ✅ verified (no sudo)
+`~/venvs/sourcemeter` with `pyvisa pyvisa-py pyusb` + numpy/pandas/matplotlib/
+jupyter, for the Keithley 2401 SMU I-V sweeps (`SweepPV.ipynb`). Verified
+`pyvisa 1.14.1` imports and the pure-Python backend loads on the test Mac mini.
+```sh
+./50-sourcemeter-venv.sh
+```
+> **GPIB needs a driver (manual, §6).** The sweep talks to the Keithley over a
+> USB-GPIB adapter (`GPIB1::24::INSTR`). `pyvisa-py` alone can't do GPIB on
+> macOS — install **NI-VISA + NI-488.2** (or the adapter vendor's driver), then
+> `python3 -c "import pyvisa; print(pyvisa.ResourceManager().list_resources())"`
+> should list the instrument.
+
 ### Step 40 — remote access ⚠️ needs sudo (run interactively) ✅ verified
 Enables **SSH (Remote Login)** + **Screen Sharing (VNC)**, prepares
 `~/.ssh/authorized_keys`, and prints this Mac's user / IP for collaborators.
@@ -319,3 +332,6 @@ Flags: `-a` archive (recursive + perms/times/symlinks) · `-v` verbose ·
 - **Xilinx Vivado** + USRP X310 FPGA/RFNoC toolchain — only for rebuilding
   bitstreams / simulating RTL (`rx-fft*`, `rx-fir*`, FT232 & LRLocal `verilog/`).
 - **Foundry PDK IP** (TSMC 28 nm macros) — gitignored, not redistributable.
+- **NI-VISA + NI-488.2** (or USB-GPIB adapter vendor driver) — GPIB backend for
+  SCAN_sourcemeter's Keithley 2401 (`GPIB1::24::INSTR`). Free from ni.com.
+  `pyvisa`/`pyvisa-py` (step 50) install fine; only the GPIB transport is manual.

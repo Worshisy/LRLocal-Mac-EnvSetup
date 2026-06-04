@@ -16,17 +16,21 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 | 00 | `00-base-tools.sh` | Xcode Command Line Tools, **Homebrew**, **libusb** |
 | 10 | `10-usrp-conda-env.sh` | **Miniconda** + the single `usrp` conda env (`env/usrp-env.yml`) |
 | 20 | `20-ft232-venv.sh` | `~/venvs/ft232` — `pyftdi numpy jupyter` + pip libusb (direct, no sudo) |
-| 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct, not conda) |
+| 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct) |
+| 50 | `50-sourcemeter-venv.sh` | `~/venvs/sourcemeter` — `pyvisa pyvisa-py` (Keithley SMU; direct) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
 
 ### Environment design
 - **One Miniconda env** (`usrp`) can run **all four repos**: USRP + GNU
   Radio/GRC, the **LRLocal-V2 Python branch**, **FT232** (`pyftdi` + conda
   `libusb`), and **RTK** (`pyserial`).
-- **FT232 and RTK also have their own direct venvs** (`~/venvs/ft232`,
-  `~/venvs/rtk`) — so either route works. FT232's venv prefers the **Homebrew
-  libusb** (step 00, the default), falling back to a pip-bundled `libusb-package`
-  if Homebrew isn't present; the conda env uses conda's `libusb`.
+- **FT232, RTK, and SCAN_sourcemeter also have their own direct venvs**
+  (`~/venvs/ft232`, `~/venvs/rtk`, `~/venvs/sourcemeter`) — so either route
+  works. FT232's venv prefers the **Homebrew libusb** (step 00, the default),
+  falling back to a pip-bundled `libusb-package` if Homebrew isn't present; the
+  conda env uses conda's `libusb`.
+- **SCAN_sourcemeter** (Keithley 2401 SMU I-V sweeps) uses **PyVISA**; the
+  Python side installs cleanly, but **GPIB needs NI-VISA** (manual, see below).
 - **UHD pinned to 4.9.x** in the env to match the version the USRP host apps
   were verified against (run-steps record UHD 4.9.0.0). The installer
   auto-falls-back to unpinned UHD if conda-forge can't solve the pin here.
@@ -60,6 +64,7 @@ sudo password once (Homebrew); step 40 uses sudo for the remote-access toggles.
 | **LRLocal-V2** | MATLAB side needs **MATLAB** (manual, below). Python branch: `conda activate usrp`, then `jupyter notebook` inside `03-tag-template-gen-code/`. |
 | **FT232_SCAN_IO** | `source ~/venvs/ft232/bin/activate` **or** `conda activate usrp`, plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python3 -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
 | **RTK_dev_for_cm-loc** | `source ~/venvs/rtk/bin/activate` **or** `conda activate usrp`, then `python3 relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
+| **SCAN_sourcemeter** | `source ~/venvs/sourcemeter/bin/activate` **or** `conda activate usrp`, then `jupyter notebook SweepPV.ipynb`. **Needs NI-VISA** (manual, below) for the USB-GPIB adapter → Keithley 2401. |
 
 ## Manual prerequisites (licensed — NOT scripted)
 
@@ -72,6 +77,10 @@ These can't be automated (licensing / size / non-redistributable) — install by
   (FT232 / LRLocal `verilog/`, `vsim/`). Running the host apps does **not** need it.
 - **Foundry PDK IP** (TSMC 28 nm SRAM/eFuse/ESD macros) — gitignored and not
   redistributable; the chip RTL won't simulate standalone without it.
+- **NI-VISA + NI-488.2** (or the USB-GPIB adapter vendor's macOS driver) — the
+  VISA/GPIB backend SCAN_sourcemeter needs to reach the Keithley 2401 at
+  `GPIB1::24::INSTR`. `pyvisa`/`pyvisa-py` install fine, but GPIB on macOS won't
+  enumerate without this driver. Download from ni.com (free).
 
 ## Remote access (step 40)
 

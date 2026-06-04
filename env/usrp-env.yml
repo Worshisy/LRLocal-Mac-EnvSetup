@@ -38,3 +38,6 @@ dependencies:
   - libusb            # USB backend pyftdi/pyusb need (conda-forge build)
   # --- RTK_dev_for_cm-loc: u-blox RELPOSNED serial monitor
   - pyserial
+  # --- SCAN_sourcemeter: Keithley 2401 SMU I-V sweeps over PyVISA
+  - pyvisa
+  - pyvisa-py         # pure-Python VISA backend (USB-TMC/TCPIP/serial; GPIB needs NI-VISA)
