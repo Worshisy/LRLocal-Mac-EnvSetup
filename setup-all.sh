@@ -21,7 +21,7 @@ for a in "$@"; do
     *) STEPS+=("$a") ;;
   esac
 done
-[ ${#STEPS[@]} -eq 0 ] && STEPS=(00 10 20 30 50 40)
+[ ${#STEPS[@]} -eq 0 ] && STEPS=(00 10 20 30 50 60 40)
 
 declare -A SCRIPT=(
   [00]=00-base-tools.sh
@@ -29,6 +29,7 @@ declare -A SCRIPT=(
   [20]=20-ft232-venv.sh
   [30]=30-rtk-venv.sh
   [50]=50-sourcemeter-venv.sh
+  [60]=60-saleae-venv.sh
   [40]=40-ssh-remote.sh
 )
 declare -A DESC=(
@@ -37,6 +38,7 @@ declare -A DESC=(
   [20]="FT232_SCAN_IO venv (pyftdi)"
   [30]="RTK venv (pyserial)"
   [50]="SCAN_sourcemeter venv (pyvisa) — Keithley SMU"
+  [60]="Saleae venv (logic2-automation) — Logic analyzer"
   [40]="Remote access: SSH + Screen Sharing"
 )
 

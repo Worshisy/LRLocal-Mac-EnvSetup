@@ -171,6 +171,16 @@ jupyter, for the Keithley 2401 SMU I-V sweeps (`SweepPV.ipynb`). Verified
 > `python3 -c "import pyvisa; print(pyvisa.ResourceManager().list_resources())"`
 > should list the instrument.
 
+### Step 60 — Saleae venv ✅ verified (no sudo)
+`~/venvs/saleae` with `logic2-automation` (the Python API that drives the Saleae
+**Logic 2 desktop app**) + sci stack. Verified `from saleae import automation`
+imports. The Logic Pro analyzer is detected on USB (`0x21a9:0x1006`).
+```sh
+./60-saleae-venv.sh
+```
+> Capture runs in the **Logic 2 desktop app** (manual install, §6 recap). Enable
+> its Automation server (Preferences) before using the Python API.
+
 ### Step 40 — remote access ⚠️ needs sudo (run interactively) ✅ verified
 Enables **SSH (Remote Login)** + **Screen Sharing (VNC)**, prepares
 `~/.ssh/authorized_keys`, and prints this Mac's user / IP for collaborators.
@@ -335,3 +345,10 @@ Flags: `-a` archive (recursive + perms/times/symlinks) · `-v` verbose ·
 - **NI-VISA + NI-488.2** (or USB-GPIB adapter vendor driver) — GPIB backend for
   SCAN_sourcemeter's Keithley 2401 (`GPIB1::24::INSTR`). Free from ni.com.
   `pyvisa`/`pyvisa-py` (step 50) install fine; only the GPIB transport is manual.
+  ⚠️ **Adapter matters:** a **Keysight 82357B** USB-GPIB (`0x0957:0x0518`) has
+  **no macOS driver** (NI-VISA can't drive it; Keysight IO Libraries is
+  Windows/Linux only). For macOS use an **NI GPIB-USB-HS** + NI-488.2, a
+  **Prologix GPIB-USB** (serial), or the 2401's **RS-232** port instead.
+- **Saleae Logic 2 desktop app** — capture software for the Saleae analyzer
+  (the `logic2-automation` pip package in step 60 only drives it). Install from
+  <https://www.saleae.com/downloads/>; enable its Automation server to script it.

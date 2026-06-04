@@ -18,6 +18,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 | 20 | `20-ft232-venv.sh` | `~/venvs/ft232` — `pyftdi numpy jupyter` + pip libusb (direct, no sudo) |
 | 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct) |
 | 50 | `50-sourcemeter-venv.sh` | `~/venvs/sourcemeter` — `pyvisa pyvisa-py` (Keithley SMU; direct) |
+| 60 | `60-saleae-venv.sh` | `~/venvs/saleae` — `logic2-automation` (Saleae Logic; direct) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
 
 ### Environment design
@@ -65,6 +66,7 @@ sudo password once (Homebrew); step 40 uses sudo for the remote-access toggles.
 | **FT232_SCAN_IO** | `source ~/venvs/ft232/bin/activate` **or** `conda activate usrp`, plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python3 -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
 | **RTK_dev_for_cm-loc** | `source ~/venvs/rtk/bin/activate` **or** `conda activate usrp`, then `python3 relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
 | **SCAN_sourcemeter** | `source ~/venvs/sourcemeter/bin/activate` **or** `conda activate usrp`, then `jupyter notebook SweepPV.ipynb`. **Needs NI-VISA** (manual, below) for the USB-GPIB adapter → Keithley 2401. |
+| **Saleae Logic** (tool) | `source ~/venvs/saleae/bin/activate` **or** `conda activate usrp` for the `logic2-automation` Python API. Capture itself runs in the **Logic 2 desktop app** (manual install, below). |
 
 ## Manual prerequisites (licensed — NOT scripted)
 
@@ -80,7 +82,12 @@ These can't be automated (licensing / size / non-redistributable) — install by
 - **NI-VISA + NI-488.2** (or the USB-GPIB adapter vendor's macOS driver) — the
   VISA/GPIB backend SCAN_sourcemeter needs to reach the Keithley 2401 at
   `GPIB1::24::INSTR`. `pyvisa`/`pyvisa-py` install fine, but GPIB on macOS won't
-  enumerate without this driver. Download from ni.com (free).
+  enumerate without this driver. Download from ni.com (free). **Note:** NI-VISA
+  installs the VISA layer but **NOT** GPIB — NI-488.2 is a *separate* download.
+- **Saleae Logic 2 desktop app** — the capture software for the Saleae logic
+  analyzer (the `logic2-automation` pip package in step 60 only *drives* it).
+  Install from <https://www.saleae.com/downloads/>; enable the Automation server
+  in its Preferences to use the Python API.
 
 ## Remote access (step 40)
 

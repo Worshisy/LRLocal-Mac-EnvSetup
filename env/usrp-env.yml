@@ -41,3 +41,7 @@ dependencies:
   # --- SCAN_sourcemeter: Keithley 2401 SMU I-V sweeps over PyVISA
   - pyvisa
   - pyvisa-py         # pure-Python VISA backend (USB-TMC/TCPIP/serial; GPIB needs NI-VISA)
+  # --- Saleae Logic analyzer automation (pip-only; drives the Logic 2 desktop app)
+  - pip
+  - pip:
+    - logic2-automation
