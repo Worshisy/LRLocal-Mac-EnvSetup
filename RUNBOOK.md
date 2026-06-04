@@ -259,6 +259,47 @@ After step 40, collaborators connect with the info the script printed:
 
 ---
 
+## 8b. Sync files to/from this Mac (rsync over SSH)
+
+Run these on the **other** computer (the source). Substitute this Mac's
+`<user>@<ip>` (the step-40 output prints them; e.g. `ddh-macmini4-01@<lan-ip>`).
+`~/dest` expands to `/Users/<user>/dest` on the Mac.
+
+```sh
+# Push a folder UP to this Mac (trailing slash on src = copy its CONTENTS)
+rsync -avz -e ssh  ~/local/folder/   <user>@<ip>:~/dest/
+
+# Big files / show progress / resume if interrupted
+rsync -avzP -e ssh  bigfile.dat      <user>@<ip>:~/Captures/
+
+# Dry run first — show what WOULD change, copy nothing
+rsync -avzn -e ssh  src/             <user>@<ip>:~/dest/
+
+# Skip junk
+rsync -avz --exclude '.git' --exclude '.DS_Store' --exclude 'build/' src/  <user>@<ip>:~/dest/
+
+# Mirror exactly (deletes extra files on the Mac — careful)
+rsync -avz --delete -e ssh  src/     <user>@<ip>:~/dest/
+
+# Pull FROM this Mac (reverse direction)
+rsync -avz -e ssh  <user>@<ip>:~/Projects/USRP_study_yishen/  ./USRP_local/
+```
+
+Flags: `-a` archive (recursive + perms/times/symlinks) · `-v` verbose ·
+`-z` compress · `-P` progress+resume · `-n` dry-run · `-e ssh` transport.
+
+> **Trailing slash matters:** `rsync src/ dest/` copies the *contents* of `src`
+> into `dest`; `rsync src dest/` creates `dest/src/`.
+>
+> **Auth:** prompts for the account password unless the source machine's SSH
+> public key is in this Mac's `~/.ssh/authorized_keys` (then it's passwordless).
+>
+> **rsync flavor:** this Mac ships Apple's **openrsync** (protocol 29) — the
+> flags above all work. For GNU-only extras (`--info=progress2`) install GNU
+> rsync with `brew install rsync`.
+
+---
+
 ## 9. Troubleshooting quick hits
 
 | Symptom | Fix |
