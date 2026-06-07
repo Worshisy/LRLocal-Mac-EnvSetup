@@ -8,7 +8,7 @@
 # Usage:
 #   ./clone-repos.sh                 # clone into the PARENT dir of this kit (../)
 #   ./clone-repos.sh /path/to/dir    # clone into a chosen dir
-#   WITH_SUBMODULES=1 ./clone-repos.sh   # also pull USRP's uhd+gnuradio source (GBs)
+#   WITH_SUBMODULES=0 ./clone-repos.sh   # SKIP USRP's uhd+gnuradio source (default: pull it)
 set -u
 
 # Default workspace = the directory ONE LEVEL UP from this kit (i.e. ../), so the
@@ -72,13 +72,16 @@ for r in "${REPOS[@]}"; do
   fi
 done
 
-# USRP submodules (uhd + gnuradio upstream SOURCE) are large and only needed for
-# studying the source / building FPGA bitstreams — NOT for running the host apps.
-if [ "${WITH_SUBMODULES:-0}" = "1" ] && [ -d "$WORKSPACE/USRP_study_yishen/.git" ]; then
-  say "Pulling USRP submodules (uhd + gnuradio source — several GB)"
-  git -C "$WORKSPACE/USRP_study_yishen" submodule update --init --recursive || warn "submodule init failed"
-else
-  warn "Skipped USRP uhd/gnuradio submodule source (run with WITH_SUBMODULES=1 if you need it)."
+# USRP submodules (uhd + gnuradio upstream SOURCE). Pulled BY DEFAULT now;
+# set WITH_SUBMODULES=0 to skip (they're several GB; needed for studying source
+# / building FPGA bitstreams, not for running the host apps off conda UHD).
+if [ -d "$WORKSPACE/USRP_study_yishen/.git" ]; then
+  if [ "${WITH_SUBMODULES:-1}" != "0" ]; then
+    say "Pulling USRP submodules: uhd + gnuradio source (several GB; WITH_SUBMODULES=0 to skip)"
+    git -C "$WORKSPACE/USRP_study_yishen" submodule update --init --recursive || warn "submodule init failed"
+  else
+    warn "Skipped USRP uhd/gnuradio submodule source (WITH_SUBMODULES=0)."
+  fi
 fi
 
 say "Done. Repos in: $WORKSPACE"

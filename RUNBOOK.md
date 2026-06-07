@@ -101,14 +101,14 @@ credential store, then clones. By **default it clones into the parent dir of thi
 kit** (`../`), so the repos sit as **siblings of `LRLocal-Mac-EnvSetup`** (not a
 separate `~/Projects`). Pass a path to override.
 ```sh
-./clone-repos.sh                     # clones all 4 into ../ (next to this kit)
+./clone-repos.sh                     # clones all 4 into ../ ; PULLS USRP submodules by default
 ./clone-repos.sh /some/other/dir     # or a chosen location
-# Need the UHD/GNU Radio *source* too (study / FPGA builds, several GB)?
-WITH_SUBMODULES=1 ./clone-repos.sh
+WITH_SUBMODULES=0 ./clone-repos.sh   # skip the uhd+gnuradio source (several GB)
 ```
-> The USRP **host apps** (`00-`/`01-`/`11-`/…) run from the conda UHD — you do
-> **not** need the `uhd/`+`gnuradio/` submodule source to run them. Only pull
-> submodules to read upstream source or build FPGA bitstreams.
+> USRP's `uhd/` + `gnuradio/` submodule **source is now pulled by default**
+> (several GB). The **host apps** (`00-`/`01-`/`11-`/…) actually run off the
+> conda UHD and don't need it — set `WITH_SUBMODULES=0` to skip if you only want
+> to run, not study/build FPGA bitstreams.
 > *(Paths below say `~/Projects/<repo>` as an example — substitute wherever you
 > cloned, e.g. the kit's parent dir.)*
 
