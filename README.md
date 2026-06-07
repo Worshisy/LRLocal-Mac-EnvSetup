@@ -19,6 +19,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 | 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct) |
 | 50 | `50-sourcemeter-venv.sh` | `~/venvs/sourcemeter` — `pyvisa pyvisa-py` (Keithley SMU; direct) |
 | 60 | `60-saleae-venv.sh` | `~/venvs/saleae` — `logic2-automation` (Saleae Logic; direct) |
+| 70 | `70-gr-filerepeater.sh` | builds the **gr-filerepeater** OOT module into the `usrp` env (GRC flowgraph blocks) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
 
 ### Environment design

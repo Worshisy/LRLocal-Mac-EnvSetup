@@ -181,6 +181,20 @@ imports. The Logic Pro analyzer is detected on USB (`0x21a9:0x1006`).
 > Capture runs in the **Logic 2 desktop app** (manual install, §6 recap). Enable
 > its Automation server (Preferences) before using the Python API.
 
+### Step 70 — gr-filerepeater OOT module (for GRC flowgraphs)
+`USRP_study_yishen/grc/*.grc` (B200_FileRec, B200_SpecAna) use blocks from the
+out-of-tree module **gr-filerepeater** (`filerepeater_AdvFileSink`,
+`filerepeater_StateOr`, `filerepeater_StateTimer`). Without it, GRC shows
+**"Missing Block"**. It's a C++/pybind11 OOT module (GNU Radio 3.9+) and must be
+**compiled against the GR 3.10 in the `usrp` env** — not available on
+conda-forge/pip.
+```sh
+./70-gr-filerepeater.sh          # clones ghostop14/gr-filerepeater -> ~/src, builds into $CONDA_PREFIX
+```
+> Source: <https://github.com/ghostop14/gr-filerepeater>. Builds into the conda
+> env so `gnuradio-companion` finds the block defs. Restart `grc` after.
+> Only needed if you open those GRC flowgraphs; the headless C++ apps don't use it.
+
 ### Step 40 — remote access ⚠️ needs sudo (run interactively) ✅ verified
 Enables **SSH (Remote Login)** + **Screen Sharing (VNC)**, prepares
 `~/.ssh/authorized_keys`, and prints this Mac's user / IP for collaborators.
