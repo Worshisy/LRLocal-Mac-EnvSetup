@@ -25,13 +25,23 @@ else
 fi
 
 # ── 2. Screen Sharing (VNC) ───────────────────────────────────────────────────
+# Screen Sharing and Remote Management (ARD) CONFLICT — only one can be active.
+# A bare `launchctl enable` can leave Screen Sharing in a "not permitted" half-
+# state (VNC then fails). So: turn OFF Remote Management first, then do a clean
+# bootout + bootstrap of Screen Sharing.
 say "Enabling Screen Sharing (GUI / VNC)"
-if sudo launchctl enable system/com.apple.screensharing 2>/dev/null; then
-  sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensharing.plist 2>/dev/null || true
-  ok "Screen Sharing service enabled"
+sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+     -deactivate -stop >/dev/null 2>&1 || true   # ensure Remote Management is OFF (conflicts)
+sudo launchctl enable system/com.apple.screensharing 2>/dev/null || true
+sudo launchctl bootout   system /System/Library/LaunchDaemons/com.apple.screensharing.plist 2>/dev/null || true
+if sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensharing.plist 2>/dev/null; then
+  ok "Screen Sharing (re)started clean"
 else
-  warn "launchctl path refused — enable 'Screen Sharing' in System Settings ▸ General ▸ Sharing instead."
+  warn "Couldn't start via launchctl. In System Settings ▸ General ▸ Sharing:"
+  warn "turn Screen Sharing OFF then ON, and make sure Remote Management is OFF."
 fi
+warn "If VNC says 'Screen Sharing is not permitted', re-run those 3 launchctl lines"
+warn "(or toggle Screen Sharing off/on in System Settings) — it's the ARD conflict."
 warn "Remote users log in with a local macOS account + that account's password."
 
 # ── 3. SSH key access for collaborators ───────────────────────────────────────
