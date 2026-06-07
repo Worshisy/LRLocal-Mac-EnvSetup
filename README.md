@@ -13,22 +13,21 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 
 | Step | Script | Covers |
 |---|---|---|
-| 00 | `00-base-tools.sh` | Xcode Command Line Tools, **Homebrew**, **libusb** |
-| 10 | `10-usrp-conda-env.sh` | **Miniconda** + the single `usrp` conda env (`env/usrp-env.yml`) |
-| 20 | `20-ft232-venv.sh` | `~/venvs/ft232` — `pyftdi numpy jupyter` + pip libusb (direct, no sudo) |
-| 30 | `30-rtk-venv.sh` | `~/venvs/rtk` — `pyserial` (direct) |
-| 60 | `60-saleae-venv.sh` | `~/venvs/saleae` — `logic2-automation` (Saleae Logic; direct) |
+| 00 | `00-base-tools.sh` | Xcode Command Line Tools (+ optional Homebrew/libusb — conda has its own) |
+| 10 | `10-usrp-conda-env.sh` | **Miniconda** + the single `usrp` conda env — **all tools** (`env/usrp-env.yml`) |
 | 70 | `70-gr-filerepeater.sh` | builds the **gr-filerepeater** OOT module into the `usrp` env (GRC flowgraph blocks) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
 
-### Environment design
-- **One Miniconda env** (`usrp`) can run **all four repos**: USRP + GNU
-  Radio/GRC, the **LRLocal-V2 Python branch**, **FT232** (`pyftdi` + conda
-  `libusb`), and **RTK** (`pyserial`).
-- **FT232 and RTK also have their own direct venvs** (`~/venvs/ft232`,
-  `~/venvs/rtk`) — so either route works. FT232's venv prefers the **Homebrew
-  libusb** (step 00, the default), falling back to a pip-bundled `libusb-package`
-  if Homebrew isn't present; the conda env uses conda's `libusb`.
+### Environment design — ONE conda env for everything
+- **A single Miniconda env (`usrp`) runs all the tools** — no per-tool venvs.
+  It carries: USRP + GNU Radio/GRC (UHD 4.9), the **LRLocal-V2 Python branch**
+  (numpy/scipy/matplotlib/jupyter/pandas/tqdm), **FT232** (`pyftdi` + conda
+  `libusb`), **RTK** (`pyserial`), **Saleae** (`logic2-automation`), and the
+  **gr-filerepeater** OOT blocks (step 70).
+- **Just `conda activate usrp` for everything.** (Earlier per-tool venvs under
+  `~/venvs/*` were dropped — redundant once the deps live in the conda env.)
+- Homebrew/libusb (step 00) is now **optional** — the conda env brings its own
+  `libusb`; Homebrew is only a convenience for other system tooling.
 - **SCAN_sourcemeter** (Keithley 2401 SMU over a Keysight 82357B USB-GPIB) is
   **NOT supported on this Apple-Silicon Mac** and was removed from the flow — the
   82357B has no working macOS driver (NI's GPIB kexts are x86_64-only, and NI-VISA
@@ -56,18 +55,20 @@ chmod +x *.sh
 # or:  ./setup-all.sh 00 10   # just specific steps
 ```
 
-Steps are **idempotent** — re-run any one if it fails. Step 00 asks for your
-sudo password once (Homebrew); step 40 uses sudo for the remote-access toggles.
+Steps are **idempotent** — re-run any one if it fails. Step 40 uses sudo for the
+remote-access toggles (run it as your normal user; it calls sudo itself).
 
 ## Per-repo: what to do after setup
 
-| Repo | Run it with |
+**Everything runs in one env — `conda activate usrp` first**, then:
+
+| Repo | Run it with (after `conda activate usrp`) |
 |---|---|
-| **USRP_study_yishen** | `conda activate usrp`, then build each `NN-…/apps` (`cmake .. && make`) or run the Python tools — see each project's `notes/run-steps-sy.md`. `git submodule update --init --recursive` only if you need the UHD/GNU Radio **source** (several GB; for study/FPGA, not for running the host apps). |
-| **LRLocal-V2** | MATLAB side needs **MATLAB** (manual, below). Python branch: `conda activate usrp`, then `jupyter notebook` inside `03-tag-template-gen-code/`. |
-| **FT232_SCAN_IO** | `source ~/venvs/ft232/bin/activate` **or** `conda activate usrp`, plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python3 -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
-| **RTK_dev_for_cm-loc** | `source ~/venvs/rtk/bin/activate` **or** `conda activate usrp`, then `python3 relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
-| **Saleae Logic** (tool) | `source ~/venvs/saleae/bin/activate` **or** `conda activate usrp` for the `logic2-automation` Python API. Capture itself runs in the **Logic 2 desktop app** (manual install, below). |
+| **USRP_study_yishen** | build each `NN-…/apps` (`cmake .. && make`) or run the Python tools — see each project's `notes/run-steps-sy.md`. `git submodule update --init --recursive` only if you need the UHD/GNU Radio **source** (several GB; study/FPGA, not for running host apps). GRC flowgraphs: `grc grc/B200_SpecAna.grc`. |
+| **LRLocal-V2** | MATLAB side needs **MATLAB** (manual, below). Python branch: `jupyter notebook` inside `03-tag-template-gen-code/`. |
+| **FT232_SCAN_IO** | plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
+| **RTK_dev_for_cm-loc** | `python relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
+| **Saleae Logic** (tool) | `logic2-automation` Python API is in the env; capture runs in the **Logic 2 desktop app** (manual install, below). |
 | ~~SCAN_sourcemeter~~ | **Removed** — Keithley 2401 via Keysight 82357B GPIB has no Apple-Silicon driver. Needs an Intel Mac or a Prologix/RS-232 path. |
 
 ## Manual prerequisites (licensed — NOT scripted)

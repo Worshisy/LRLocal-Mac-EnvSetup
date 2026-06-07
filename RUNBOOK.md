@@ -22,10 +22,13 @@
 Four target repos:
 | Repo | Needs |
 |---|---|
-| `FT232_SCAN_IO` | Python venv (pyftdi) + libusb |
-| `LRLocal-V2` | MATLAB + toolboxes, **and** a Python branch (conda env) |
-| `USRP_study_yishen` | conda env (UHD 4.9 + GNU Radio/GRC + build tools) |
-| `RTK_dev_for_cm-loc` | Python venv (pyserial) |
+| `FT232_SCAN_IO` | `usrp` conda env (pyftdi + libusb) |
+| `LRLocal-V2` | MATLAB + toolboxes, **and** a Python branch (`usrp` conda env) |
+| `USRP_study_yishen` | `usrp` conda env (UHD 4.9 + GNU Radio/GRC + build tools) |
+| `RTK_dev_for_cm-loc` | `usrp` conda env (pyserial) |
+
+> **One environment:** a single Miniconda env (`usrp`) covers all of these —
+> `conda activate usrp` and everything's available. No per-tool venvs.
 
 ---
 
@@ -151,19 +154,16 @@ conda activate usrp
 > by hand anytime if a probe complains about a missing image. *(Verified on the
 > Mac mini 2026-06-06: after download, B200 firmware loads in `uhd_usrp_probe`.)*
 
-### Step 20 — FT232 venv ✅ verified (no sudo)
-`~/venvs/ft232` with `pyftdi numpy jupyter`; auto-installs a pip `libusb-package`
-backend if no system libusb. Verified it **detected the attached FT232H**
-(`ftdi://ftdi:232h:1/1`) on the test Mac mini.
-```sh
-./20-ft232-venv.sh
-```
+### FT232 / RTK / Saleae — folded into the conda env (no separate venvs)
+These used to be standalone venvs (steps 20/30/60). They're now just part of the
+single `usrp` conda env (step 10), so there's nothing extra to run:
+- **FT232_SCAN_IO** → `pyftdi` + conda `libusb` (verified detecting the FT232H
+  `ftdi://ftdi:232h:1/1`).
+- **RTK_dev_for_cm-loc** → `pyserial`.
+- **Saleae** → `logic2-automation` (drives the Logic 2 desktop app, manual §6).
 
-### Step 30 — RTK venv ✅ verified (no sudo)
-`~/venvs/rtk` with `pyserial`.
-```sh
-./30-rtk-venv.sh
-```
+Just `conda activate usrp` and use them. (The old per-tool venv scripts and
+`~/venvs/*` were removed — redundant once the deps live in the conda env.)
 
 ### Step 50 — SCAN_sourcemeter — ❌ REMOVED (not viable on Apple Silicon)
 The Keithley 2401 SMU sweeps (`SweepPV.ipynb`) drive the instruments over a
@@ -180,16 +180,6 @@ on an Apple-Silicon Mac**, verified the hard way on 2026-06-06:
 or switch the transport to a **Prologix GPIB-USB** or the **2401's RS-232** port
 (both are pure serial — work natively on Apple Silicon) and adapt `SweepPV.ipynb`.
 The step `50-sourcemeter-venv.sh` was removed from this kit.
-
-### Step 60 — Saleae venv ✅ verified (no sudo)
-`~/venvs/saleae` with `logic2-automation` (the Python API that drives the Saleae
-**Logic 2 desktop app**) + sci stack. Verified `from saleae import automation`
-imports. The Logic Pro analyzer is detected on USB (`0x21a9:0x1006`).
-```sh
-./60-saleae-venv.sh
-```
-> Capture runs in the **Logic 2 desktop app** (manual install, §6 recap). Enable
-> its Automation server (Preferences) before using the Python API.
 
 ### Step 70 — gr-filerepeater OOT module (for GRC flowgraphs)
 `USRP_study_yishen/grc/*.grc` (B200_FileRec, B200_SpecAna) use blocks from the
@@ -263,35 +253,31 @@ Toolbox** and **Parallel Computing Toolbox** (the CFO sweeps use `parfor`).
 
 ## 7. Verify each repo
 
-> **Two ways to run FT232 / RTK:** their own venvs **or** the `usrp` conda env
-> (which now also carries `pyftdi`, `libusb`, and `pyserial`). Pick either.
+> **One env for everything — `conda activate usrp`.** No per-tool venvs.
 
 ```sh
-# USRP — conda env has the SDR stack
-conda activate usrp
+conda activate usrp         # ← do this once; covers all of the below
+
+# USRP / GNU Radio
 uhd_find_devices            # lists a connected USRP (or "no devices" if none attached)
-gnuradio-companion          # GRC GUI opens (needs a display / Screen Sharing)
+gnuradio-companion          # GRC GUI (needs a display / Screen Sharing); or: grc <flowgraph>
 python -c "import uhd, gnuradio; print(uhd.__version__)"
-# build a host app:
 cd ~/Projects/USRP_study_yishen/00-rx-to-ssd-b200/apps && mkdir -p build && cd build && cmake .. && make -j
 
-# FT232  (venv OR `conda activate usrp`)
-source ~/venvs/ft232/bin/activate
+# FT232
 python -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"   # expect ftdi://ftdi:232h:.../1
 
-# RTK  (venv OR `conda activate usrp`)
-source ~/venvs/rtk/bin/activate
+# RTK
 ls /dev/cu.usbmodem*        # find the rover port
 python ~/Projects/RTK_dev_for_cm-loc/relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX
 
 # LRLocal-V2 Python branch
-conda activate usrp
 cd ~/Projects/LRLocal-V2/03-tag-template-gen-code && jupyter notebook
 ```
 
-> Verified 2026-06-03 in the `usrp` env: `pyserial 3.5`, `pyftdi 0.55.4`
-> detecting the FT232H (`ftdi://ftdi:232h:1/1`) via conda's libusb — alongside
-> UHD 4.9.0.0 + GNU Radio 3.10.12.
+> Verified in the `usrp` env: UHD 4.9.0.0, GNU Radio 3.10.12, `pyserial`,
+> `pyftdi` detecting the FT232H (`ftdi://ftdi:232h:1/1`) via conda's libusb,
+> `saleae.automation`, and the `filerepeater` blocks — all from one env.
 
 ---
 
