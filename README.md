@@ -17,6 +17,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 | 10 | `10-usrp-conda-env.sh` | **Miniconda** + the single `usrp` conda env — **all tools** (`env/usrp-env.yml`) |
 | 70 | `70-gr-filerepeater.sh` | builds the **gr-filerepeater** OOT module into the `usrp` env (GRC flowgraph blocks) |
 | 40 | `40-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) |
+| 80 | `80-hotspot.sh` | **Wi-Fi hotspot** (macOS Internet Sharing; wired uplink → Wi-Fi) |
 
 ### Environment design — ONE conda env for everything
 - **A single Miniconda env (`usrp`) runs all the tools** — no per-tool venvs.

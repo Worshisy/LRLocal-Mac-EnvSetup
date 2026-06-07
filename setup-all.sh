@@ -21,7 +21,7 @@ for a in "$@"; do
     *) STEPS+=("$a") ;;
   esac
 done
-[ ${#STEPS[@]} -eq 0 ] && STEPS=(00 10 70 40)
+[ ${#STEPS[@]} -eq 0 ] && STEPS=(00 10 70 40 80)
 
 # NOTE: no `declare -A` here — macOS ships bash 3.2 (no associative arrays).
 # Use case-based lookups so this runs on the stock /bin/bash of a fresh Mac.
@@ -31,6 +31,7 @@ script_for() {
     10) echo 10-usrp-conda-env.sh ;;
     70) echo 70-gr-filerepeater.sh ;;
     40) echo 40-ssh-remote.sh ;;
+    80) echo 80-hotspot.sh ;;
   esac
 }
 desc_for() {
@@ -39,6 +40,7 @@ desc_for() {
     10) echo "Miniconda + single 'usrp' env — ALL tools (USRP/GRC, LRLocal-V2 Py, FT232, RTK, Saleae)" ;;
     70) echo "gr-filerepeater OOT module (build into usrp env) — GRC flowgraph blocks" ;;
     40) echo "Remote access: SSH + Screen Sharing" ;;
+    80) echo "Wi-Fi hotspot (macOS Internet Sharing)" ;;
   esac
 }
 

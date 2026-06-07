@@ -225,6 +225,19 @@ Then re-running `./40-ssh-remote.sh` reports `Remote Login already On`.
 > **Screen Sharing note:** if the `launchctl` path is refused, enable
 > **Screen Sharing** in the same *System Settings ▸ General ▸ Sharing* pane.
 
+### Step 80 — Wi-Fi hotspot (macOS Internet Sharing) ⚠️ mostly GUI
+Make this Mac broadcast a Wi-Fi hotspot so other devices get network through it.
+```sh
+./80-hotspot.sh        # shows interfaces, best-effort enable, then walks the GUI
+```
+> **Constraint:** Wi-Fi can't be both uplink and hotspot — the internet must come
+> in over a **wired** port (Ethernet `en0` or USB-NIC `en8`), and Wi-Fi (`en1`)
+> broadcasts. The SSID/password and the ON toggle are **GUI + Keychain + TCC**
+> gated on macOS 26, so the script guides you through
+> *System Settings ▸ General ▸ Sharing ▸ Internet Sharing* (share-from = wired
+> uplink; to = Wi-Fi; set SSID/password in **Wi-Fi Options**; toggle ON).
+> *(If your shared method differs, paste it and we'll script that exact flow.)*
+
 ---
 
 ## 6. MATLAB (manual — licensed, NOT scriptable) — for LRLocal-V2
