@@ -40,10 +40,36 @@ if [ -z "$BREW" ] && command -v brew >/dev/null 2>&1; then BREW="$(command -v br
 if [ -n "$BREW" ]; then
   ok "Homebrew already installed ($BREW)"
 else
-  warn "Installing Homebrew (will prompt for your sudo password once)…"
-  NONINTERACTIVE=1 /bin/bash -c \
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || {
-      warn "Homebrew install failed. Re-run after fixing network/sudo."; exit 1; }
+  # Homebrew install needs admin/sudo. On a NON-admin account it can't install —
+  # and that's OK: Homebrew is optional for these projects (FT232 falls back to a
+  # pip-bundled libusb in step 20). So skip gracefully instead of failing.
+  IS_ADMIN=no
+  case " $(id -Gn 2>/dev/null) " in *" admin "*) IS_ADMIN=yes ;; esac
+  if [ "$IS_ADMIN" != yes ]; then
+    warn "User '$(whoami)' is NOT an admin → skipping Homebrew (it needs sudo)."
+    warn "That's fine: FT232 (step 20) uses a pip libusb backend; conda has its own."
+    warn "If you want Homebrew, have an admin install it, or make this user an admin."
+    say "Done (Homebrew skipped). Versions:"; ok "$(git --version)"
+    exit 0
+  fi
+  # IMPORTANT: Homebrew's NONINTERACTIVE mode does NOT prompt for sudo itself —
+  # it requires sudo credentials to be ALREADY cached, else it fails with a
+  # misleading "needs to be an Administrator" message (even for admins). So we
+  # pre-authorize sudo here (one password prompt), THEN run the installer.
+  warn "Installing Homebrew — enter your login password at the sudo prompt…"
+  if ! sudo -v; then
+    warn "Couldn't get sudo (wrong password, or not an admin). Homebrew is optional"
+    warn "(FT232 uses the pip libusb fallback) — skipping. Re-run as an admin to add it."
+    say "Done (Homebrew skipped)."; ok "$(git --version)"
+    exit 0
+  fi
+  if ! NONINTERACTIVE=1 /bin/bash -c \
+      "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+    warn "Homebrew install failed (network?). It's optional (FT232 uses the pip libusb fallback)."
+    warn "Fix and re-run if you want it; continuing without it."
+    say "Done (Homebrew not installed)."; ok "$(git --version)"
+    exit 0
+  fi
   BREW="/opt/homebrew/bin/brew"
 fi
 

@@ -23,34 +23,40 @@ for a in "$@"; do
 done
 [ ${#STEPS[@]} -eq 0 ] && STEPS=(00 10 20 30 50 60 70 40)
 
-declare -A SCRIPT=(
-  [00]=00-base-tools.sh
-  [10]=10-usrp-conda-env.sh
-  [20]=20-ft232-venv.sh
-  [30]=30-rtk-venv.sh
-  [50]=50-sourcemeter-venv.sh
-  [60]=60-saleae-venv.sh
-  [70]=70-gr-filerepeater.sh
-  [40]=40-ssh-remote.sh
-)
-declare -A DESC=(
-  [00]="Base tools: Xcode CLT, Homebrew, libusb"
-  [10]="Miniconda + single 'usrp' env (UHD/GNU Radio/GRC + LRLocal-V2 Python)"
-  [20]="FT232_SCAN_IO venv (pyftdi)"
-  [30]="RTK venv (pyserial)"
-  [50]="SCAN_sourcemeter venv (pyvisa) — Keithley SMU"
-  [60]="Saleae venv (logic2-automation) — Logic analyzer"
-  [70]="gr-filerepeater OOT module (build into usrp env) — GRC flowgraph blocks"
-  [40]="Remote access: SSH + Screen Sharing"
-)
+# NOTE: no `declare -A` here — macOS ships bash 3.2 (no associative arrays).
+# Use case-based lookups so this runs on the stock /bin/bash of a fresh Mac.
+script_for() {
+  case "$1" in
+    00) echo 00-base-tools.sh ;;
+    10) echo 10-usrp-conda-env.sh ;;
+    20) echo 20-ft232-venv.sh ;;
+    30) echo 30-rtk-venv.sh ;;
+    50) echo 50-sourcemeter-venv.sh ;;
+    60) echo 60-saleae-venv.sh ;;
+    70) echo 70-gr-filerepeater.sh ;;
+    40) echo 40-ssh-remote.sh ;;
+  esac
+}
+desc_for() {
+  case "$1" in
+    00) echo "Base tools: Xcode CLT, Homebrew, libusb" ;;
+    10) echo "Miniconda + single 'usrp' env (UHD/GNU Radio/GRC + LRLocal-V2 Python)" ;;
+    20) echo "FT232_SCAN_IO venv (pyftdi)" ;;
+    30) echo "RTK venv (pyserial)" ;;
+    50) echo "SCAN_sourcemeter venv (pyvisa) — Keithley SMU" ;;
+    60) echo "Saleae venv (logic2-automation) — Logic analyzer" ;;
+    70) echo "gr-filerepeater OOT module (build into usrp env) — GRC flowgraph blocks" ;;
+    40) echo "Remote access: SSH + Screen Sharing" ;;
+  esac
+}
 
 printf '\n\033[1;35m== Mac-mini environment setup ==\033[0m\n'
 printf 'Target: Apple-Silicon macOS. Steps to run: %s\n' "${STEPS[*]}"
 
 for s in "${STEPS[@]}"; do
-  scr="${SCRIPT[$s]:-}"
+  scr="$(script_for "$s")"
   [ -z "$scr" ] && { printf '\033[1;33mUnknown step "%s" — skipping.\033[0m\n' "$s"; continue; }
-  printf '\n\033[1;35m──────── Step %s: %s ────────\033[0m\n' "$s" "${DESC[$s]}"
+  printf '\n\033[1;35m──────── Step %s: %s ────────\033[0m\n' "$s" "$(desc_for "$s")"
   if [ "$AUTO" -ne 1 ]; then
     read -r -p "Run step $s? [Y/n/q] " ans
     case "$ans" in
