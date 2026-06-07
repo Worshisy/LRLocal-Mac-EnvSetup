@@ -362,6 +362,36 @@ Flags: `-a` archive (recursive + perms/times/symlinks) · `-v` verbose ·
 
 ---
 
+## 8c. Long field jobs that survive SSH disconnect (`field-jobs.sh`)
+
+Run the RTK monitor + the USRP RX-to-SSD capture so they **keep running after you
+close SSH**, and you can **re-attach to see live output**. Uses **tmux**.
+
+**Where:** **on the slave** (the field Mac mini) — the B200 and RTK rover are
+physically attached there. Your laptop just SSHes in. The two jobs are:
+- `rtk` — `RTK_dev_for_cm-loc` RELPOSNED web monitor (headless, `--host 0.0.0.0`)
+- `rx`  — `USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh` (continuous RX → SSD, AGC)
+
+```sh
+ssh ddh-macmini4-02@192.168.2.1            # into the slave
+~/LRLocal-Mac-EnvSetup/field-jobs.sh start # launches both in tmux, logs to ~/field-logs/
+#   …now you can just close the SSH session; both keep running.
+
+# later, reconnect and watch:
+~/LRLocal-Mac-EnvSetup/field-jobs.sh attach rx   # live tmux view; Ctrl-b then d to detach
+~/LRLocal-Mac-EnvSetup/field-jobs.sh logs   rtk  # or tail the log file
+~/LRLocal-Mac-EnvSetup/field-jobs.sh status      # what's running
+~/LRLocal-Mac-EnvSetup/field-jobs.sh stop        # stop both
+```
+- RTK web dashboard is reachable from the laptop at **`http://192.168.2.1:8000`**.
+- Auto-detects repo locations (kit's parent dir / `~/Projects` / `~`) and the RTK
+  serial port. Override: `REPO_BASE=…  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000`.
+- Each job also tees to `~/field-logs/{rtk,rx}.log`, so output persists even if you
+  never attach. `run.sh` respects the already-active `usrp` conda env (won't switch
+  to base). Needs `tmux` (in the `usrp` env via step 10, or `conda install -n usrp tmux`).
+
+---
+
 ## 9. Troubleshooting quick hits
 
 | Symptom | Fix |

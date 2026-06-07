@@ -34,6 +34,7 @@ dependencies:
   - jupyter
   - pandas
   - tqdm
+  - tmux              # detached sessions for field-jobs.sh (survive SSH disconnect)
   # --- FT232_SCAN_IO: FT232H scan-chain host driver
   - pyftdi
   - libusb            # USB backend pyftdi/pyusb need (conda-forge build)
