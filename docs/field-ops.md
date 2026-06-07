@@ -8,11 +8,18 @@
 > SSH and you can re-attach to see live output.
 
 ## Coordinates
+
+> **Fleet of up to 6 minis.** Each unit's login user is **`ddh-macmini4-0X`**
+> where **`X` = that mini's number (01–06)** — e.g. `ddh-macmini4-02`. Substitute
+> your unit's number in every command below. Give each mini its **own AP SSID**
+> too (e.g. `macmini-field-0X`) so two units never collide on the air; the AP IP
+> is `192.168.2.1` on each (you're only ever joined to one at a time).
+
 | | |
 |---|---|
-| Field AP (Wi-Fi) | SSID **`macmini-field`** · pw **`eecs2435`** · ch 40 (5 GHz, 2.4 fallback) |
-| Mac mini IP | **`192.168.2.1`** |
-| SSH user | **`ddh-macmini4-02`** |
+| Field AP (Wi-Fi) | SSID **`macmini-field-0X`** · pw **`eecs2435`** · ch 40 (5 GHz, 2.4 fallback) |
+| Mac mini IP | **`192.168.2.1`** (on whichever unit's AP you're joined to) |
+| SSH user | **`ddh-macmini4-0X`** (X = unit #, 01–06) |
 | Kit path on mini | `~/LRLocal-Mac-EnvSetup` |
 | RTK dashboard | `http://192.168.2.1:8000` |
 | Capture logs on mini | `~/field-logs/{rtk,rx}.log` |
@@ -23,10 +30,10 @@
 
 Join the **`macmini-field`** Wi-Fi on your laptop, then:
 ```sh
-ssh ddh-macmini4-02@192.168.2.1
+ssh ddh-macmini4-0X@192.168.2.1
 ```
 (First time only: accept the host-key prompt. If it says *"Connection closed"* you
-used the wrong username — it's `ddh-macmini4-02`.)
+used the wrong username — it's `ddh-macmini4-0X`.)
 
 ## 2. Start the field jobs (then you can disconnect)
 ```sh
@@ -38,7 +45,7 @@ Start just one if you want: `field-jobs.sh start rtk`  or  `field-jobs.sh start 
 
 ## 3. Reconnect later and watch live output
 ```sh
-ssh ddh-macmini4-02@192.168.2.1
+ssh ddh-macmini4-0X@192.168.2.1
 ~/LRLocal-Mac-EnvSetup/field-jobs.sh attach rx   # live view of the RX capture
 #   detach (leave it running):  Ctrl-b  then  d
 ~/LRLocal-Mac-EnvSetup/field-jobs.sh attach rtk  # live view of the RTK monitor
@@ -63,13 +70,13 @@ http://192.168.2.1:8000
 ## 6. Pull captures back to the laptop (end of day)
 Run **on the laptop** (the RX writes to the mini's SSD; adjust the source path):
 ```sh
-rsync -avzP ddh-macmini4-02@192.168.2.1:/path/to/captures/  ~/field-data/
+rsync -avzP ddh-macmini4-0X@192.168.2.1:/path/to/captures/  ~/field-data/
 ```
 (For bulk IQ, plug in direct Ethernet — the AP is 2.4/5 GHz Wi-Fi and slow.)
 
 ## 7. GUI when you need it (VNC)
 ```sh
-open vnc://192.168.2.1            # log in as ddh-macmini4-02
+open vnc://192.168.2.1            # log in as ddh-macmini4-0X
 ```
 If it says *"Screen Sharing is not permitted"*, fix over SSH:
 ```sh
@@ -87,6 +94,6 @@ sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensh
 - **Jobs survive SSH drop** because they're in tmux — that's the whole point; don't run them in a bare SSH shell.
 - **Don't reboot in the field** unless necessary — the AP can come up degraded. The
   mini is set to never-sleep + auto-restart on power loss (see `field-setup.md`).
-- **Wrong-username symptom:** `Connection closed by 192.168.2.1 port 22` → use `ddh-macmini4-02`.
+- **Wrong-username symptom:** `Connection closed by 192.168.2.1 port 22` → use `ddh-macmini4-0X`.
 - Full one-time field build (FileVault off, auto-login, AP, reboot tests): see
   [`field-setup.md`](field-setup.md). Operator commands for the jobs: this file.

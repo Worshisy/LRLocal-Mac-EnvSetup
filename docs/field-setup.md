@@ -50,7 +50,7 @@ System Settings → Users & Groups → at the **bottom of the main page**, "**Au
 ```bash
 defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser   # expected: your username
 # CLI fallback:
-sudo sysadminctl -autologin set -userName "yishen" -password -
+sudo sysadminctl -autologin set -userName "ddh-macmini4-0X" -password -
 ```
 
 ### 1.4 Never sleep, never display sleep   *(automated by 80-hotspot.sh)*
@@ -135,13 +135,16 @@ mini username · mini login password · SSH target `192.168.2.1` ·
 
 ## Phase 2 — Laptop SSH setup
 
+> Fleet of up to 6 minis: the login user is **`ddh-macmini4-0X`** (X = unit #,
+> 01–06). Substitute your unit's number in the `User`/`-userName` fields below.
+
 ### 2.1 macOS/Linux laptop
 ```bash
 cat >> ~/.ssh/config <<'EOF'
 
 Host mini
     HostName 192.168.2.1
-    User yishen
+    User ddh-macmini4-0X
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
     ServerAliveInterval 30
@@ -158,7 +161,7 @@ Add-Content -Path "C:\ssh\ssh_config.txt" -Value @"
 
 Host mini
     HostName 192.168.2.1
-    User yishen
+    User ddh-macmini4-0X
     IdentityFile C:\ssh\id_ed25519
     IdentitiesOnly yes
     ServerAliveInterval 30

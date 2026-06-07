@@ -373,7 +373,7 @@ physically attached there. Your laptop just SSHes in. The two jobs are:
 - `rx`  — `USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh` (continuous RX → SSD, AGC)
 
 ```sh
-ssh ddh-macmini4-02@192.168.2.1            # into the slave
+ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's number, 01–06)
 ~/LRLocal-Mac-EnvSetup/field-jobs.sh start # launches both in tmux, logs to ~/field-logs/
 #   …now you can just close the SSH session; both keep running.
 
