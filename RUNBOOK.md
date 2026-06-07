@@ -95,14 +95,22 @@ git config --global --add credential.helper store
 
 ## 4. Clone the 4 project repos ✅ verified (script)
 
+`clone-repos.sh` is **self-contained for auth** — it installs `gh` if missing,
+runs `gh auth login` (browser or token) if you're not logged in, sets up a git
+credential store, then clones. By **default it clones into the parent dir of this
+kit** (`../`), so the repos sit as **siblings of `LRLocal-Mac-EnvSetup`** (not a
+separate `~/Projects`). Pass a path to override.
 ```sh
-./clone-repos.sh ~/Projects          # clones all 4 into ~/Projects
+./clone-repos.sh                     # clones all 4 into ../ (next to this kit)
+./clone-repos.sh /some/other/dir     # or a chosen location
 # Need the UHD/GNU Radio *source* too (study / FPGA builds, several GB)?
-WITH_SUBMODULES=1 ./clone-repos.sh ~/Projects
+WITH_SUBMODULES=1 ./clone-repos.sh
 ```
 > The USRP **host apps** (`00-`/`01-`/`11-`/…) run from the conda UHD — you do
 > **not** need the `uhd/`+`gnuradio/` submodule source to run them. Only pull
 > submodules to read upstream source or build FPGA bitstreams.
+> *(Paths below say `~/Projects/<repo>` as an example — substitute wherever you
+> cloned, e.g. the kit's parent dir.)*
 
 > **USRP capture volume:** the USRP RX-to-SSD apps historically run from an
 > external SSD (`/Volumes/USRP01/…`). Clone wherever you like; just point each
