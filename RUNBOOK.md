@@ -165,18 +165,21 @@ backend if no system libusb. Verified it **detected the attached FT232H**
 ./30-rtk-venv.sh
 ```
 
-### Step 50 — SCAN_sourcemeter venv ✅ verified (no sudo)
-`~/venvs/sourcemeter` with `pyvisa pyvisa-py pyusb` + numpy/pandas/matplotlib/
-jupyter, for the Keithley 2401 SMU I-V sweeps (`SweepPV.ipynb`). Verified
-`pyvisa 1.14.1` imports and the pure-Python backend loads on the test Mac mini.
-```sh
-./50-sourcemeter-venv.sh
-```
-> **GPIB needs a driver (manual, §6).** The sweep talks to the Keithley over a
-> USB-GPIB adapter (`GPIB1::24::INSTR`). `pyvisa-py` alone can't do GPIB on
-> macOS — install **NI-VISA + NI-488.2** (or the adapter vendor's driver), then
-> `python3 -c "import pyvisa; print(pyvisa.ResourceManager().list_resources())"`
-> should list the instrument.
+### Step 50 — SCAN_sourcemeter — ❌ REMOVED (not viable on Apple Silicon)
+The Keithley 2401 SMU sweeps (`SweepPV.ipynb`) drive the instruments over a
+**Keysight 82357B USB-GPIB** adapter (`GPIB0/1::24::INSTR`). This **cannot work
+on an Apple-Silicon Mac**, verified the hard way on 2026-06-06:
+- NI's GPIB kexts (`ni488k`, `nipalk`) are **x86_64-only (no `arm64e`)** → can't
+  load on Apple Silicon at all (kexts don't run under Rosetta).
+- NI-VISA ≥ 2022 Q4 (the only version that runs on modern macOS) **dropped GPIB**.
+- The community `macosx_gpib_lib` (x86_64, under Rosetta) loads but enumerates
+  **0 boards** on macOS 26 (raw USB/IOKit blocked).
+- NI's own KB confirms: no GPIB on modern macOS / Apple Silicon.
+
+**To use the source meter:** run it on an **Intel Mac** (NI x86_64 kexts load),
+or switch the transport to a **Prologix GPIB-USB** or the **2401's RS-232** port
+(both are pure serial — work natively on Apple Silicon) and adapt `SweepPV.ipynb`.
+The step `50-sourcemeter-venv.sh` was removed from this kit.
 
 ### Step 60 — Saleae venv ✅ verified (no sudo)
 `~/venvs/saleae` with `logic2-automation` (the Python API that drives the Saleae
@@ -363,13 +366,10 @@ Flags: `-a` archive (recursive + perms/times/symlinks) · `-v` verbose ·
 - **Xilinx Vivado** + USRP X310 FPGA/RFNoC toolchain — only for rebuilding
   bitstreams / simulating RTL (`rx-fft*`, `rx-fir*`, FT232 & LRLocal `verilog/`).
 - **Foundry PDK IP** (TSMC 28 nm macros) — gitignored, not redistributable.
-- **NI-VISA + NI-488.2** (or USB-GPIB adapter vendor driver) — GPIB backend for
-  SCAN_sourcemeter's Keithley 2401 (`GPIB1::24::INSTR`). Free from ni.com.
-  `pyvisa`/`pyvisa-py` (step 50) install fine; only the GPIB transport is manual.
-  ⚠️ **Adapter matters:** a **Keysight 82357B** USB-GPIB (`0x0957:0x0518`) has
-  **no macOS driver** (NI-VISA can't drive it; Keysight IO Libraries is
-  Windows/Linux only). For macOS use an **NI GPIB-USB-HS** + NI-488.2, a
-  **Prologix GPIB-USB** (serial), or the 2401's **RS-232** port instead.
+- **SCAN_sourcemeter / GPIB** — *not available on Apple Silicon* (see Step 50
+  above). The Keysight 82357B has no macOS driver; NI GPIB kexts are x86_64-only
+  and NI-VISA dropped GPIB. Run on an Intel Mac, or move to a Prologix GPIB-USB /
+  RS-232 (serial) adapter. Removed from this kit.
 - **Saleae Logic 2 desktop app** — capture software for the Saleae analyzer
   (the `logic2-automation` pip package in step 60 only drives it). Install from
   <https://www.saleae.com/downloads/>; enable its Automation server to script it.

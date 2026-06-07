@@ -39,9 +39,9 @@ dependencies:
   - libusb            # USB backend pyftdi/pyusb need (conda-forge build)
   # --- RTK_dev_for_cm-loc: u-blox RELPOSNED serial monitor
   - pyserial
-  # --- SCAN_sourcemeter: Keithley 2401 SMU I-V sweeps over PyVISA
-  - pyvisa
-  - pyvisa-py         # pure-Python VISA backend (USB-TMC/TCPIP/serial; GPIB needs NI-VISA)
+  # NOTE: SCAN_sourcemeter (Keithley 2401 over Keysight 82357B GPIB) was removed —
+  # the 82357B has no Apple-Silicon/macOS driver (NI kexts are x86_64-only; NI-VISA
+  # dropped GPIB). See RUNBOOK. Revisit only via a Prologix/RS-232 (serial) path.
   # --- Saleae Logic analyzer automation (pip-only; drives the Logic 2 desktop app)
   - pip
   - pip:
