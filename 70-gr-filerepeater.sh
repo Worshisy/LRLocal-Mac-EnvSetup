@@ -30,7 +30,11 @@ source "$CONDA_SH"; set +u; conda activate usrp; set -u
 ok "CONDA_PREFIX=$CONDA_PREFIX"
 command -v gnuradio-config-info >/dev/null 2>&1 && ok "GNU Radio $(gnuradio-config-info --version 2>/dev/null)" || { warn "GNU Radio not in env"; exit 1; }
 # pybind11 is needed to build the bindings; ensure it's present.
-python -c "import pybind11" 2>/dev/null || { warn "installing pybind11 into env"; conda install -y -n usrp pybind11 >/dev/null 2>&1 || true; }
+# (conda's shell function isn't set -u safe, so relax it for the install.)
+if ! python -c "import pybind11" 2>/dev/null; then
+  warn "installing pybind11 into env"
+  set +u; conda install -y -n usrp pybind11 >/dev/null 2>&1 || true; set -u
+fi
 
 # ── 2. Clone / update source ──────────────────────────────────────────────────
 say "Fetching gr-filerepeater source -> $SRC"

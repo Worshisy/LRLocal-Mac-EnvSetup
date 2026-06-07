@@ -26,6 +26,7 @@ dependencies:
   - clang_osx-arm64
   - clangxx_osx-arm64
   - libboost-devel    # Boost program_options (headers + lib) for the host apps
+  - pybind11          # needed to build OOT GNU Radio modules (e.g. gr-filerepeater, step 70)
   # --- Scientific Python: USRP analysis scripts + LRLocal-V2 03- Python branch
   - numpy
   - scipy
