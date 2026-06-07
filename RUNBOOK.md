@@ -241,8 +241,10 @@ reboot tests: [docs/field-setup.md](docs/field-setup.md).**
 ./80-hotspot.sh        # automates the scriptable parts; walks the GUI parts
 ```
 The script automates: **Wi-Fi cleanup** (so it won't auto-join an SSID at boot),
-**never-sleep + auto-restart on power failure**, **disable auto-updates**, and a
-**LaunchDaemon that re-kicks the AP ~30 s after cold boot**. You still do by hand
+**never-sleep + auto-restart on power failure**, **disable auto-updates**,
+**disable Spotlight on the capture SSD** (`/Volumes/USRP*` — competes with the RX
+writer), and a **LaunchDaemon that re-kicks the AP ~30 s after cold boot**. You
+still do by hand
 (one-time, with a display): **FileVault OFF** + **auto-login** (headless boot),
 and the **Internet Sharing AP** itself —
 > **The AP trick:** share *from* **Ethernet** *to* **Wi-Fi**, with a **dummy
@@ -389,6 +391,9 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
 - Each job also tees to `~/field-logs/{rtk,rx}.log`, so output persists even if you
   never attach. `run.sh` respects the already-active `usrp` conda env (won't switch
   to base). Needs `tmux` (in the `usrp` env via step 10, or `conda install -n usrp tmux`).
+- Before starting **rx**, it **disables Spotlight on the capture SSD** (`/Volumes/USRP*`,
+  or `$CAPTURE_VOL`) — macOS can re-enable it after a reboot, and it would otherwise
+  make `run.sh` stop to ask / cause overflows. Uses sudo (you run `start` interactively).
 
 > **Host operator cheat-sheet** (what to type from your laptop over SSH —
 > connect, start, detach, re-attach, dashboard, pull captures, VNC):

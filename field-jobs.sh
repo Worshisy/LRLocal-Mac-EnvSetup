@@ -54,6 +54,26 @@ wrap() {  # $1=dir  $2=command  $3=logfile
     "$CONDA_SH" "$1" "$2" "$2" "$3"
 }
 
+# Spotlight indexing on the capture SSD competes with the RX writer at 50 MS/s
+# (overflows) and makes run.sh stop to ask. Disable it on every mounted capture
+# volume — done at EACH rx start because macOS can re-enable it after a reboot/
+# remount. Needs sudo (you're running field-jobs.sh interactively, so fine).
+disable_spotlight_capture() {
+  local found=0 vol
+  for vol in /Volumes/USRP* "${CAPTURE_VOL:-}"; do
+    [ -n "$vol" ] && [ -d "$vol" ] || continue
+    found=1
+    if mdutil -s "$vol" 2>/dev/null | tail -1 | grep -qi enabled; then
+      warn "Spotlight ON for $vol — disabling (sudo)…"
+      sudo mdutil -i off "$vol" >/dev/null 2>&1 && ok "Spotlight off: $vol" \
+        || warn "couldn't disable; run:  sudo mdutil -i off \"$vol\""
+    else
+      ok "Spotlight already off: $vol"
+    fi
+  done
+  [ "$found" = 1 ] || warn "no capture SSD mounted (/Volumes/USRP* or \$CAPTURE_VOL) — skipping Spotlight step"
+}
+
 start_one() {
   case "$1" in
     rtk)
@@ -68,8 +88,9 @@ start_one() {
     rx)
       [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
       "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-jobs.sh attach rx)"; return 0; }
-      # run.sh respects an already-active conda env (won't switch to base).
-      "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "./run.sh" "$LOGDIR/rx.log")"
+      disable_spotlight_capture   # so run.sh doesn't block on the Spotlight prompt / overflow
+      # run.sh respects the active conda env; FORCE_RUN=1 is a non-tty fallback.
+      "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "FORCE_RUN=1 ./run.sh" "$LOGDIR/rx.log")"
       ok "rx started → 01-rx-to-ssd-b200-agc/run.sh  (log: $LOGDIR/rx.log)" ;;
     *) warn "unknown job '$1' (use rtk or rx)"; return 1 ;;
   esac

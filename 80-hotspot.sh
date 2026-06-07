@@ -46,6 +46,18 @@ sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownl
 sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates -bool false 2>/dev/null || true
 ok "auto-updates off"
 
+# Spotlight on the capture SSD competes with the RX writer at 50 MS/s (overflows)
+# and makes run.sh stop to ask. Disable it on the capture volume(s). field-jobs.sh
+# re-applies this at each RX start in case macOS re-enables it after a reboot.
+say "Disabling Spotlight on capture SSD(s) /Volumes/USRP* (+ \$CAPTURE_VOL)"
+_sl_found=0
+for vol in /Volumes/USRP* "${CAPTURE_VOL:-}"; do
+  [ -n "$vol" ] && [ -d "$vol" ] || continue
+  _sl_found=1
+  sudo mdutil -i off "$vol" >/dev/null 2>&1 && ok "Spotlight off: $vol" || warn "couldn't disable Spotlight on $vol"
+done
+[ "$_sl_found" = 1 ] || warn "no capture SSD mounted now — field-jobs.sh also disables it at RX start"
+
 # ── 3. Boot-time AP re-kick daemon ────────────────────────────────────────────
 # After a cold boot Internet Sharing's toggle persists but the AP often fails to
 # actually broadcast. This kicks it 30 s after boot.
