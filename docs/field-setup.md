@@ -84,7 +84,8 @@ networksetup -setairportpower en0 on
 System Settings → General → Sharing → ⓘ next to **Internet Sharing**:
 - **Share your connection from:** Ethernet
 - **To devices using:** check Wi-Fi
-- **Wi-Fi Options:** Name `macmini-field` · Channel 11 (2.4 GHz) · Security **WPA2/WPA3 Personal** · Password ≥8 chars
+- **Wi-Fi Options:** Name `macmini-field` · **Channel 40 (5 GHz)** · Security **WPA2/WPA3 Personal** · Password **`eecs2435`**
+  - *Channel 40 is 5 GHz. macOS Internet Sharing on Apple Silicon is often 2.4 GHz-only — if the GUI won't show ch 40 / 5 GHz, use a 2.4 GHz channel (e.g. 11) instead.*
 
 Click Done, toggle **Internet Sharing** on → Start.
 ```bash
@@ -127,7 +128,8 @@ sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyI
 ```
 
 ### 1.10 Note credentials (for the field bag)
-mini username · mini login password · AP SSID · AP password · SSH target `192.168.2.1`.
+mini username · mini login password · SSH target `192.168.2.1` ·
+**AP SSID `macmini-field` · AP channel 40 (5 GHz) · AP password `eecs2435`**.
 
 ---
 

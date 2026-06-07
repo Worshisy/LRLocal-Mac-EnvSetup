@@ -89,7 +89,9 @@ cat <<GUI
     • System Settings ▸ General ▸ Sharing ▸ ⓘ next to "Internet Sharing":
         Share your connection from:  Ethernet (the dummy uplink)
         To devices using:            Wi-Fi
-        Wi-Fi Options…:  Name=macmini-field  Channel=11  Security=WPA2/WPA3 Personal  Password>=8 chars
+        Wi-Fi Options…:  Name=macmini-field  Channel=40  Security=WPA2/WPA3 Personal  Password=eecs2435
+        (Channel 40 = 5 GHz. If the GUI won't offer it / only lists 2.4 GHz on
+         this Apple-Silicon mini, pick a 2.4 GHz channel like 11 instead.)
     • Toggle "Internet Sharing" ON ▸ Start.  Menu bar shows the upward AP arrow.
     • From the laptop: confirm a LOCK icon on the SSID (known bug: password can
       silently fail, leaving it open — if so, toggle Sharing off/on once).
