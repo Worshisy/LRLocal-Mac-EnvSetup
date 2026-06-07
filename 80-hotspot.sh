@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
-# 80-hotspot.sh — turn this Mac into a Wi-Fi hotspot (macOS Internet Sharing).
+# 80-hotspot.sh — make this Mac a STANDALONE FIELD Wi-Fi AP (no internet uplink).
 #
-# macOS Internet Sharing shares ONE interface's internet to others. For a Wi-Fi
-# HOTSPOT the uplink must be a DIFFERENT (wired) interface — Wi-Fi can't be both
-# the uplink and the broadcast radio. So: plug internet into Ethernet/USB-NIC,
-# and Wi-Fi becomes the hotspot.
+# Implements the headless field-setup method (full walkthrough + reboot tests in
+# docs/field-setup.md). The mini broadcasts its own Wi-Fi AP at 192.168.2.1 via
+# macOS Internet Sharing; a laptop joins it and SSHes in — no display/keyboard.
+# A "dummy uplink" (Ethernet loopback plug / dead switch / bare USB-Ethernet)
+# gives macOS the LINK it needs to start sharing, even with no real internet.
 #
-# On macOS 26 the SSID/password and the ON toggle are GUI + Keychain + privacy
-# (TCC) gated and can't be fully scripted. This script: shows your interfaces,
-# configures the scriptable NAT bits (best effort), and walks you through the
-# exact GUI steps. Run as your normal user (it calls sudo itself).
-#
-# NOTE: if your shared Claude Q/A uses a different method, paste it and we'll
-# replace this with that exact procedure.
+# This script does the SCRIPTABLE parts (Wi-Fi cleanup, never-sleep, auto-restart,
+# disable updates, the boot-time AP re-kick daemon). The SSID/password + the
+# Internet Sharing ON toggle are GUI/Keychain/TCC-gated → guided at the end.
+# Run as your NORMAL user (it calls sudo itself). Do it once, with a display
+# attached, and run the reboot tests before going to the field.
 set -u
 
 say()  { printf '\n\033[1;36m[80] %s\033[0m\n' "$*"; }
@@ -20,31 +19,85 @@ ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 
 [ "$(id -u)" -eq 0 ] && { warn "Run as your normal user (it calls sudo itself), not as root."; exit 1; }
+say "Caching sudo (enter your password once)…"; sudo -v || { warn "sudo failed; aborting."; exit 1; }
 
-# ── 1. Show this Mac's interfaces + which has internet ────────────────────────
-say "Network interfaces on this Mac"
-networksetup -listnetworkserviceorder 2>/dev/null | grep -E 'Hardware Port|Device' | sed 's/^/  /' | head -40
-UPLINK_WIFI="$(ipconfig getifaddr en1 2>/dev/null || true)"
-[ -n "$UPLINK_WIFI" ] && warn "Internet is currently via Wi-Fi (en1=$UPLINK_WIFI). For a Wi-Fi HOTSPOT you must move the uplink to a WIRED port (en0 Ethernet or en8 USB-NIC)."
+# Detect the Wi-Fi device on THIS Mac (don't assume en0/en1).
+WIFI_DEV="$(networksetup -listallhardwareports 2>/dev/null | awk '/Wi-Fi/{getline; print $2; exit}')"
+[ -z "$WIFI_DEV" ] && WIFI_DEV=en1
+ok "Wi-Fi device: $WIFI_DEV"
 
-# ── 2. Best-effort scripted enable (may still need the GUI toggle) ────────────
-say "Best-effort: enabling the Internet Sharing service"
-sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.nat NAT -dict Enabled -int 1 2>/dev/null && ok "NAT marked enabled in com.apple.nat" || warn "could not write com.apple.nat (TCC?) — use the GUI"
-sudo launchctl enable system/com.apple.InternetSharing 2>/dev/null || true
-sudo launchctl kickstart -k system/com.apple.InternetSharing 2>/dev/null && ok "InternetSharing service kicked" || warn "service start needs the GUI toggle (below)"
+# ── 1. Wi-Fi cleanup — don't auto-join any SSID at boot (else the AP can't start)
+say "Removing preferred Wi-Fi networks on $WIFI_DEV"
+networksetup -listpreferredwirelessnetworks "$WIFI_DEV" 2>/dev/null | tail -n +2 | sed 's/^[[:space:]]*//' | while IFS= read -r n; do
+  [ -n "$n" ] && sudo networksetup -removepreferredwirelessnetwork "$WIFI_DEV" "$n" >/dev/null 2>&1 && echo "    - removed: $n"
+done
+sudo networksetup -setairportpower "$WIFI_DEV" on 2>/dev/null && ok "Wi-Fi powered on (not joined to anything)"
 
-# ── 3. The reliable path — GUI ────────────────────────────────────────────────
-say "Set it up in System Settings (the supported, reliable way):"
-cat <<'GUI'
-  1. Plug the INTERNET source into a WIRED port (Ethernet en0, or the USB NIC en8).
-     (Confirm that wired link has internet before continuing.)
-  2. System Settings ▸ General ▸ Sharing ▸ click the ⓘ next to "Internet Sharing".
-  3. "Share your connection from:"  → the wired uplink (Ethernet / USB 10/100/1000 LAN).
-  4. "To computers using:"          → check  Wi-Fi.
-  5. Click "Wi-Fi Options…"         → set Network Name (SSID), Security = WPA2/WPA3
-     Personal, and the Password. (Stored in Keychain — that's why it's GUI-only.)
-  6. Toggle "Internet Sharing" ON   → confirm "Start". The Wi-Fi menu icon shows ⬆.
-  Devices can now join your SSID and get internet through this Mac.
+# ── 2. Headless reliability ───────────────────────────────────────────────────
+say "Never sleep; auto-restart after power failure"
+sudo pmset -a sleep 0 displaysleep 0 disksleep 0 powernap 0 standby 0 hibernatemode 0 2>/dev/null && ok "sleep disabled"
+sudo pmset -a autorestart 1 2>/dev/null && ok "autorestart on power"
+sudo systemsetup -setrestartpowerfailure on 2>/dev/null || true
+sudo systemsetup -setrestartfreeze on 2>/dev/null || true
+
+say "Disabling automatic software updates"
+sudo softwareupdate --schedule off 2>/dev/null || true
+sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload -bool false 2>/dev/null || true
+sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates -bool false 2>/dev/null || true
+ok "auto-updates off"
+
+# ── 3. Boot-time AP re-kick daemon ────────────────────────────────────────────
+# After a cold boot Internet Sharing's toggle persists but the AP often fails to
+# actually broadcast. This kicks it 30 s after boot.
+say "Installing the sharing-restart LaunchDaemon"
+sudo tee /Library/LaunchDaemons/com.local.sharing-restart.plist >/dev/null <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.local.sharing-restart</string>
+  <key>RunAtLoad</key><true/>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>sleep 30; /bin/launchctl kickstart -k system/com.apple.InternetSharing</string>
+  </array>
+  <key>StandardOutPath</key><string>/var/log/sharing-restart.log</string>
+  <key>StandardErrorPath</key><string>/var/log/sharing-restart.log</string>
+</dict>
+</plist>
+EOF
+sudo chown root:wheel /Library/LaunchDaemons/com.local.sharing-restart.plist
+sudo chmod 644 /Library/LaunchDaemons/com.local.sharing-restart.plist
+sudo launchctl load -w /Library/LaunchDaemons/com.local.sharing-restart.plist 2>/dev/null && ok "sharing-restart daemon installed" || warn "daemon load deferred (loads at boot)"
+
+# ── 4. Manual / GUI prerequisites + the AP config ─────────────────────────────
+say "Finish these in the GUI (one-time; see docs/field-setup.md for details):"
+cat <<GUI
+  HEADLESS LOGIN (so it boots to desktop with no keyboard):
+    • Turn OFF FileVault:  System Settings ▸ Privacy & Security ▸ FileVault ▸ Off
+        (required for auto-login; verify: fdesetup status -> Off)
+    • Auto-login:  System Settings ▸ Users & Groups ▸ "Automatically log in as" ▸ your user
+        CLI fallback:  sudo sysadminctl -autologin set -userName "$(whoami)" -password -
+    • SSH: ensure Remote Login is ON (step 40 / 40-ssh-remote.sh).
+
+  THE Wi-Fi AP (Internet Sharing):
+    • Give built-in Ethernet a DUMMY uplink: loopback plug / dead switch / bare
+      USB-Ethernet — it needs LINK, not internet. (If a campus 802.1X cable is
+      plugged in, UNPLUG it — macOS refuses to share an 802.1X source.)
+    • System Settings ▸ General ▸ Sharing ▸ ⓘ next to "Internet Sharing":
+        Share your connection from:  Ethernet (the dummy uplink)
+        To devices using:            Wi-Fi
+        Wi-Fi Options…:  Name=macmini-field  Channel=11  Security=WPA2/WPA3 Personal  Password>=8 chars
+    • Toggle "Internet Sharing" ON ▸ Start.  Menu bar shows the upward AP arrow.
+    • From the laptop: confirm a LOCK icon on the SSID (known bug: password can
+      silently fail, leaving it open — if so, toggle Sharing off/on once).
 GUI
-warn "If macOS blocks the toggle, grant the relevant app Full Disk Access (Privacy & Security) or just use the GUI toggle."
-say "Done. Verify: another device sees your SSID; or  ifconfig bridge100  shows the shared subnet when ON."
+
+# ── 5. Verify ─────────────────────────────────────────────────────────────────
+say "Verify (after you toggle Internet Sharing ON):"
+echo "    ifconfig | grep -A3 '^bridge'      # expect bridge100 inet 192.168.2.1"
+echo "    ps aux | grep -E 'bootpd|InternetSharing' | grep -v grep"
+echo "    # laptop then:  ssh <user>@192.168.2.1"
+say "Done. Run the reboot + power-fail tests in docs/field-setup.md before the field."

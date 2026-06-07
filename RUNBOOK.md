@@ -225,18 +225,26 @@ Then re-running `./40-ssh-remote.sh` reports `Remote Login already On`.
 > **Screen Sharing note:** if the `launchctl` path is refused, enable
 > **Screen Sharing** in the same *System Settings ▸ General ▸ Sharing* pane.
 
-### Step 80 — Wi-Fi hotspot (macOS Internet Sharing) ⚠️ mostly GUI
-Make this Mac broadcast a Wi-Fi hotspot so other devices get network through it.
+### Step 80 — Headless field Wi-Fi AP (standalone, no uplink)
+Make the mini broadcast its **own Wi-Fi AP at `192.168.2.1`** so a laptop joins
+and SSHes in **with no display/keyboard** — for field use. **Full walkthrough +
+reboot tests: [docs/field-setup.md](docs/field-setup.md).**
 ```sh
-./80-hotspot.sh        # shows interfaces, best-effort enable, then walks the GUI
+./80-hotspot.sh        # automates the scriptable parts; walks the GUI parts
 ```
-> **Constraint:** Wi-Fi can't be both uplink and hotspot — the internet must come
-> in over a **wired** port (Ethernet `en0` or USB-NIC `en8`), and Wi-Fi (`en1`)
-> broadcasts. The SSID/password and the ON toggle are **GUI + Keychain + TCC**
-> gated on macOS 26, so the script guides you through
-> *System Settings ▸ General ▸ Sharing ▸ Internet Sharing* (share-from = wired
-> uplink; to = Wi-Fi; set SSID/password in **Wi-Fi Options**; toggle ON).
-> *(If your shared method differs, paste it and we'll script that exact flow.)*
+The script automates: **Wi-Fi cleanup** (so it won't auto-join an SSID at boot),
+**never-sleep + auto-restart on power failure**, **disable auto-updates**, and a
+**LaunchDaemon that re-kicks the AP ~30 s after cold boot**. You still do by hand
+(one-time, with a display): **FileVault OFF** + **auto-login** (headless boot),
+and the **Internet Sharing AP** itself —
+> **The AP trick:** share *from* **Ethernet** *to* **Wi-Fi**, with a **dummy
+> wired uplink** (loopback plug / dead switch / bare USB-Ethernet) — Internet
+> Sharing needs *link*, not real internet. Set SSID (`macmini-field`) + WPA2/WPA3
+> password in **Wi-Fi Options**, toggle ON. If a campus **802.1X** cable is
+> plugged in, unplug it (macOS won't share an 802.1X source). Verify
+> `ifconfig | grep -A3 '^bridge'` shows `bridge100 → 192.168.2.1`, then
+> `ssh <user>@192.168.2.1` from the laptop. **Run the Phase-3 reboot/power-fail
+> tests before the field.**
 
 ---
 
