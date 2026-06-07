@@ -89,5 +89,22 @@ except Exception as e:
     print("  gnuradio import note:", e)
 PY
 
+# ── 4. UHD device images (firmware + FPGA) ────────────────────────────────────
+# conda's uhd package does NOT bundle the B200/X3xx/etc. firmware+FPGA images.
+# Without them uhd_usrp_probe fails: "Could not load firmware ... No EOF record
+# found". uhd_images_downloader fetches them into $CONDA_PREFIX/share/uhd/images.
+# Idempotent: skips files already present.
+say "Downloading UHD device images (firmware + FPGA)"
+IMGDIR="$CONDA_PREFIX/share/uhd/images"
+if [ -f "$IMGDIR/usrp_b200_fw.hex" ] && [ -s "$IMGDIR/usrp_b200_fw.hex" ]; then
+  ok "UHD images already present in $IMGDIR"
+else
+  if command -v uhd_images_downloader >/dev/null 2>&1; then
+    uhd_images_downloader && ok "UHD images downloaded to $IMGDIR" || warn "uhd_images_downloader failed (network?) — re-run it manually"
+  else
+    warn "uhd_images_downloader not found in env"
+  fi
+fi
+
 say "Done. Use it with:  conda activate $ENV_NAME"
 warn "USRP C++ host apps (00-/01-/11-/…): activate this env first so its UHD/Boost win, then cmake/make per each project's notes/run-steps-sy.md."

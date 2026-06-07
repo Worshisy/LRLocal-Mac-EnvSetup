@@ -143,6 +143,13 @@ conda activate usrp
 > **No auto-activate:** the script sets `auto_activate_base false`, so new
 > shells do **not** drop you into `base` — activate envs on demand with
 > `conda activate usrp`. (To re-enable: `conda config --set auto_activate_base true`.)
+>
+> **UHD device images:** the script also runs `uhd_images_downloader` (conda's
+> `uhd` package doesn't bundle the firmware/FPGA images). Without them
+> `uhd_usrp_probe` fails with *"Could not load firmware … No EOF record found"*.
+> They land in `$CONDA_PREFIX/share/uhd/images`. Re-run `uhd_images_downloader`
+> by hand anytime if a probe complains about a missing image. *(Verified on the
+> Mac mini 2026-06-06: after download, B200 firmware loads in `uhd_usrp_probe`.)*
 
 ### Step 20 — FT232 venv ✅ verified (no sudo)
 `~/venvs/ft232` with `pyftdi numpy jupyter`; auto-installs a pip `libusb-package`
