@@ -390,6 +390,10 @@ ssh ddh-macmini4-02@192.168.2.1            # into the slave
   never attach. `run.sh` respects the already-active `usrp` conda env (won't switch
   to base). Needs `tmux` (in the `usrp` env via step 10, or `conda install -n usrp tmux`).
 
+> **Host operator cheat-sheet** (what to type from your laptop over SSH —
+> connect, start, detach, re-attach, dashboard, pull captures, VNC):
+> [`docs/field-ops.md`](docs/field-ops.md).
+
 ---
 
 ## 9. Troubleshooting quick hits
