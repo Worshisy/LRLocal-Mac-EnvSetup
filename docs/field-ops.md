@@ -95,5 +95,14 @@ sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensh
 - **Don't reboot in the field** unless necessary — the AP can come up degraded. The
   mini is set to never-sleep + auto-restart on power loss (see `field-setup.md`).
 - **Wrong-username symptom:** `Connection closed by 192.168.2.1 port 22` → use `ddh-macmini4-0X`.
+- **"REMOTE HOST IDENTIFICATION HAS CHANGED" / host key warning:** expected in the
+  fleet — every mini reuses `192.168.2.1` but has its own SSH host key. Clear the
+  stale entry: `ssh-keygen -R 192.168.2.1`, then reconnect. To stop it nagging for
+  good, add to your SSH config (`~/.ssh/config`, or `C:\Users\<you>\.ssh\config`):
+  ```
+  Host 192.168.2.1
+      StrictHostKeyChecking no
+      UserKnownHostsFile /dev/null      # Windows: NUL
+  ```
 - Full one-time field build (FileVault off, auto-login, AP, reboot tests): see
   [`field-setup.md`](field-setup.md). Operator commands for the jobs: this file.
