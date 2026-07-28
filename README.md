@@ -3,7 +3,7 @@
 > **Review status:** ⏳ Unreviewed *(default; update when Yi reviews)*
 >
 > ✍️ *Claude-authored.* Scripts to bring a **fresh Apple-Silicon Mac mini** up
-> to a state where Yi's four project repos can be built and run, plus enable
+> to a state where Yi's project repos can be built and run, plus enable
 > remote access. Derived by reading each repo's README / run-steps on 2026-06-03.
 
 Target: a new Mac mini **the same as the current one** — arm64, macOS 26.x,
@@ -44,7 +44,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 > detected** via the pip libusb backend. Steps 00 (Homebrew) and 40 (remote
 > access) need sudo — run those interactively. **See
 > [SETUP-RUNBOOK.md](SETUP-RUNBOOK.md) for the full step-by-step (incl. MATLAB
-> install + cloning the 4 repos), and [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md) for
+> install + cloning the 3 repos), and [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md) for
 > operating a set-up mini remotely / in the field.**
 
 ## Run it
@@ -68,7 +68,7 @@ remote-access toggles (run it as your normal user; it calls sudo itself).
 | Repo | Run it with (after `conda activate usrp`) |
 |---|---|
 | **USRP_study_yishen** | build each `NN-…/apps` (`cmake .. && make`) or run the Python tools — see each project's `notes/run-steps-sy.md`. `git submodule update --init --recursive` only if you need the UHD/GNU Radio **source** (several GB; study/FPGA, not for running host apps). GRC flowgraphs: `grc grc/B200_SpecAna.grc`. |
-| **LRLocal-V2** | MATLAB side needs **MATLAB** (manual, below). Python branch: `jupyter notebook` inside `03-tag-template-gen-code/`. |
+| **LRLocal-V2** | *(not auto-cloned/updated on minis)* MATLAB side needs **MATLAB** (manual, below). Python branch: `jupyter notebook` inside `03-tag-template-gen-code/`. |
 | **FT232_SCAN_IO** | plug in the FT232H, `jupyter notebook` the project's `Test.ipynb`. Verify the board: `python -c "from pyftdi.ftdi import Ftdi; Ftdi.show_devices()"`. |
 | **RTK_dev_for_cm-loc** | `python relposned_monitor.py --mode web --port /dev/cu.usbmodemXXXXXX`. |
 | **Saleae Logic** (tool) | `logic2-automation` Python API is in the env; capture runs in the **Logic 2 desktop app** (manual install, below). |

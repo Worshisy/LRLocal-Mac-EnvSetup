@@ -76,11 +76,18 @@ http://192.168.2.1:8000
 ```
 
 ## 6. Pull captures back to the laptop (end of day)
-Run **on the laptop** (the RX writes to the mini's SSD; adjust the source path):
+Run **on the laptop**. The mini has a stable symlink **`rx-data` → the RX
+capture dir** next to the kit (in `~` when the kit is at `~/LRLocal-Mac-EnvSetup`):
 ```sh
-rsync -avzP ddh-macmini4-0X@192.168.2.1:/path/to/captures/  ~/field-data/
+rsync -avzP ddh-mac-0X:rx-data/  ~/field-data/
 ```
 (For bulk IQ, plug in direct Ethernet — the AP is 2.4/5 GHz Wi-Fi and slow.)
+
+Capture SSD full (rx job dead, git pulls failing with "No space left")? After
+offloading, wipe the captures on the mini — takes **3 typed confirmations**:
+```sh
+~/LRLocal-Mac-EnvSetup/empty-rx-data.sh
+```
 
 ## 6b. Give the mini internet through your laptop (git pull, installs)
 

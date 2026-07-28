@@ -119,13 +119,25 @@ gitp pull        # git through the proxy (per-invocation; nothing persists)
 proxyon          # proxy this whole shell: curl / brew / git … (proxyoff to undo)
 ```
 
-To update **everything at once** (the 4 project repos + this kit, all ff-only
-through the tunnel):
+To update **everything at once** (the 3 project repos + this kit, all ff-only
+through the tunnel; LRLocal-V2 deliberately excluded):
 ```sh
 ~/LRLocal-Mac-EnvSetup/update-repos.sh
 ```
 Repos with local commits/changes are never merged — they're reported for you
 to resolve. `WITH_SUBMODULES=1` also updates USRP's uhd+gnuradio source (GBs).
+
+## 5. Empty the RX capture data (3 typed confirmations)
+
+When the capture SSD fills up (a full disk kills the rx job AND git pulls):
+```sh
+~/LRLocal-Mac-EnvSetup/empty-rx-data.sh
+```
+It resolves the RX data dir (`RX_DATA_DIR`/`run.conf OUT`/`USRP_study_yishen/data`,
+also reachable via the `<kit-parent>/rx-data` symlink), refuses while the rx job
+is running, lists every item with sizes, then requires **three typed answers**
+(`yes` → the item count → `DELETE`) before removing the contents. Offload
+anything you want to keep first (§2 rsync / [field-ops §6](docs/field-ops.md)).
 It also quiets the fleet host-key warning for `192.168.2.1`. The block is
 idempotent (managed markers in `~/.ssh/config`); the rest of your config is
 untouched. Without the shortcut, `ssh -R 1080 ddh-macmini4-0X@192.168.2.1`

@@ -19,13 +19,13 @@
 - A **MathWorks account + MATLAB license** (for LRLocal-V2's MATLAB code).
 - Network access.
 
-Four target repos:
+Three target repos (auto-cloned):
 | Repo | Needs |
 |---|---|
 | `FT232_SCAN_IO` | `usrp` conda env (pyftdi + libusb) |
-| `LRLocal-V2` | MATLAB + toolboxes, **and** a Python branch (`usrp` conda env) |
 | `USRP_study_yishen` | `usrp` conda env (UHD 4.9 + GNU Radio/GRC + build tools) |
 | `RTK_dev_for_cm-loc` | `usrp` conda env (pyserial) |
+| ~~`LRLocal-V2`~~ | **not cloned/updated on the minis** — clone by hand only on a machine running its MATLAB/analysis side (needs MATLAB + toolboxes, §6) |
 
 > **One environment:** a single Miniconda env (`usrp`) covers all of these —
 > `conda activate usrp` and everything's available. No per-tool venvs.
@@ -93,7 +93,7 @@ git config --global --add credential.helper store
 
 ---
 
-## 4. Clone the 4 project repos ✅ verified (script)
+## 4. Clone the 3 project repos ✅ verified (script)
 
 `clone-repos.sh` is **self-contained for auth** — it installs `gh` if missing,
 runs `gh auth login` (browser or token) if you're not logged in, sets up a git
@@ -101,10 +101,12 @@ credential store, then clones. By **default it clones into the parent dir of thi
 kit** (`../`), so the repos sit as **siblings of `LRLocal-Mac-EnvSetup`** (not a
 separate `~/Projects`). Pass a path to override.
 ```sh
-./clone-repos.sh                     # clones all 4 into ../ ; PULLS USRP submodules by default
+./clone-repos.sh                     # clones all 3 into ../ ; PULLS USRP submodules by default
 ./clone-repos.sh /some/other/dir     # or a chosen location
 WITH_SUBMODULES=0 ./clone-repos.sh   # skip the uhd+gnuradio source (several GB)
 ```
+It also drops a convenience symlink **`<kit-parent>/rx-data` → `USRP_study_yishen/data`**
+(the RX capture dir), wherever the repos were cloned.
 > USRP's `uhd/` + `gnuradio/` submodule **source is now pulled by default**
 > (several GB). The **host apps** (`00-`/`01-`/`11-`/…) actually run off the
 > conda UHD and don't need it — set `WITH_SUBMODULES=0` to skip if you only want

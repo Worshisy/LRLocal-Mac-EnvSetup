@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# update-repos.sh — git pull this kit + the 4 project repos on this Mac (mini).
+# update-repos.sh — git pull this kit + the 3 project repos on this Mac (mini).
+# (LRLocal-V2 is deliberately NOT in the list — not needed on the minis.)
 #
 # Pulls go through the reverse SOCKS tunnel at localhost:1080 that rides along
 # on every operator `ssh ddh-mac-0X` connection (see FIELD-RUNBOOK.md §4) — the
@@ -19,7 +20,7 @@ ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPOS=(FT232_SCAN_IO LRLocal-V2 USRP_study_yishen RTK_dev_for_cm-loc)
+REPOS=(FT232_SCAN_IO USRP_study_yishen RTK_dev_for_cm-loc)   # [c] LRLocal-V2 dropped (Yi, 2026-07-28)
 TUNNEL=socks5h://127.0.0.1:1080
 
 # same lookup as field-jobs.sh: kit's parent dir, then ~/Projects, then ~

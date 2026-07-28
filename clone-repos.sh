@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# clone-repos.sh — clone the 4 private project repos into a workspace dir.
+# clone-repos.sh — clone the 3 private project repos into a workspace dir.
+# (LRLocal-V2 is deliberately NOT cloned — not needed on the minis; clone it
+#  by hand on a machine that runs the MATLAB/analysis side.)
 #
 # Self-contained GitHub auth: installs `gh` if missing, runs `gh auth login`
 # (interactive — browser or token) if not logged in, and wires plain `git` to the
@@ -20,7 +22,7 @@ say()  { printf '\n\033[1;36m[clone] %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 
-REPOS=(FT232_SCAN_IO LRLocal-V2 USRP_study_yishen RTK_dev_for_cm-loc)
+REPOS=(FT232_SCAN_IO USRP_study_yishen RTK_dev_for_cm-loc)   # [c] LRLocal-V2 dropped (Yi, 2026-07-28)
 
 # ── Ensure gh is installed (download the Apple-Silicon binary if missing) ─────
 GH="$HOME/.local/bin/gh"; command -v gh >/dev/null 2>&1 && GH=gh
@@ -82,6 +84,17 @@ if [ -d "$WORKSPACE/USRP_study_yishen/.git" ]; then
   else
     warn "Skipped USRP uhd/gnuradio submodule source (WITH_SUBMODULES=0)."
   fi
+fi
+
+# [c] convenience symlink next to this kit → the RX capture data dir, so
+# captures are always at <kit-parent>/rx-data regardless of where the repos
+# were cloned (e.g. rsync ddh-mac-0X:rx-data/ from the laptop, when kit is in ~)
+if [ -d "$WORKSPACE/USRP_study_yishen" ]; then
+  KIT_PARENT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  mkdir -p "$WORKSPACE/USRP_study_yishen/data"
+  ln -sfn "$WORKSPACE/USRP_study_yishen/data" "$KIT_PARENT/rx-data" \
+    && ok "symlink: $KIT_PARENT/rx-data → $WORKSPACE/USRP_study_yishen/data" \
+    || warn "couldn't create $KIT_PARENT/rx-data symlink"
 fi
 
 say "Done. Repos in: $WORKSPACE"
