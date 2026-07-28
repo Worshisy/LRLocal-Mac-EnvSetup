@@ -3,7 +3,7 @@
 > **Review status:** ⏳ Unreviewed *(default; update when Yi reviews)*
 >
 > ✍️ *Claude-authored.* Step-by-step to take a brand-new Apple-Silicon Mac mini
-> to "can build & run all four project repos + remote access". The numbered
+> to "can build & run the project repos + remote access". The numbered
 > scripts automate most of it; this runbook is the human walkthrough including
 > the bits that **can't** be scripted (MATLAB, sudo toggles, GitHub auth).
 >
@@ -19,13 +19,13 @@
 - A **MathWorks account + MATLAB license** (for LRLocal-V2's MATLAB code).
 - Network access.
 
-Three target repos (auto-cloned):
+Four target repos (auto-cloned):
 | Repo | Needs |
 |---|---|
-| `FT232_SCAN_IO` | `usrp` conda env (pyftdi + libusb) |
+| `FT232_SCAN_IO` | `usrp` conda env (pyftdi + libusb) — *cloned once; excluded from `field-020-update-repos.sh`* |
+| `LRLocal-V2` | MATLAB + toolboxes (§6), **and** a Python branch (`usrp` conda env) |
 | `USRP_study_yishen` | `usrp` conda env (UHD 4.9 + GNU Radio/GRC + build tools) |
 | `RTK_dev_for_cm-loc` | `usrp` conda env (pyserial) |
-| ~~`LRLocal-V2`~~ | **not cloned/updated on the minis** — clone by hand only on a machine running its MATLAB/analysis side (needs MATLAB + toolboxes, §6) |
 
 > **One environment:** a single Miniconda env (`usrp`) covers all of these —
 > `conda activate usrp` and everything's available. No per-tool venvs.
@@ -93,17 +93,17 @@ git config --global --add credential.helper store
 
 ---
 
-## 4. Clone the 3 project repos ✅ verified (script)
+## 4. Clone the 4 project repos ✅ verified (script)
 
-`clone-repos.sh` is **self-contained for auth** — it installs `gh` if missing,
+`setup-030-clone-repos.sh` is **self-contained for auth** — it installs `gh` if missing,
 runs `gh auth login` (browser or token) if you're not logged in, sets up a git
 credential store, then clones. By **default it clones into the parent dir of this
 kit** (`../`), so the repos sit as **siblings of `LRLocal-Mac-EnvSetup`** (not a
 separate `~/Projects`). Pass a path to override.
 ```sh
-./clone-repos.sh                     # clones all 3 into ../ ; PULLS USRP submodules by default
-./clone-repos.sh /some/other/dir     # or a chosen location
-WITH_SUBMODULES=0 ./clone-repos.sh   # skip the uhd+gnuradio source (several GB)
+./setup-030-clone-repos.sh                     # clones all 4 into ../ ; PULLS USRP submodules by default
+./setup-030-clone-repos.sh /some/other/dir     # or a chosen location
+WITH_SUBMODULES=0 ./setup-030-clone-repos.sh   # skip the uhd+gnuradio source (several GB)
 ```
 It also drops a convenience symlink **`<kit-parent>/rx-data` → `USRP_study_yishen/data`**
 (the RX capture dir), wherever the repos were cloned.
@@ -123,30 +123,30 @@ It also drops a convenience symlink **`<kit-parent>/rx-data` → `USRP_study_yis
 ## 5. Run the environment setup
 
 ```sh
-./setup-all.sh            # interactive, pauses before each step
-# or per-step:  ./setup-all.sh 00   etc.
+./setup-000-all.sh            # interactive, pauses before each step
+# or per-step:  ./setup-000-all.sh 010   etc.
 ```
 
 What each step does and its state on the test machine:
 
-### Step 00 — base tools ⚠️ needs sudo (run interactively) ✅ verified
+### Step 010 — base tools ⚠️ needs sudo (run interactively) ✅ verified
 Xcode CLT check, **Homebrew**, **libusb**. This is the **default first step** —
 Homebrew is the system package manager and provides the libusb FT232 prefers.
 The Homebrew installer asks for your sudo password once, so run it yourself in a
 Terminal (as your normal user — **not** `sudo`):
 ```sh
-./00-base-tools.sh
+./setup-010-base-tools.sh
 ```
-> FT232 (step 20) uses this system libusb when present, and only falls back to a
-> pip-bundled `libusb-package` if Homebrew isn't installed — so step 00 is the
+> FT232 uses this system libusb when present, and only falls back to a
+> pip-bundled `libusb-package` if Homebrew isn't installed — so step 010 is the
 > preferred path, with the pip fallback as a safety net.
 
-### Step 10 — Miniconda + the `usrp` conda env ✅ verified (no sudo)
+### Step 020 — Miniconda + the `usrp` conda env ✅ verified (no sudo)
 Installs Miniconda, then the single env from `env/usrp-env.yml`: **UHD 4.9**,
 **GNU Radio/GRC**, cmake/clang/boost, numpy/scipy/matplotlib, and the
 LRLocal-V2 Python branch deps (jupyter/pandas/tqdm).
 ```sh
-./10-usrp-conda-env.sh
+./setup-020-usrp-conda-env.sh
 conda activate usrp
 ```
 > **Gotcha handled:** fresh Miniconda blocks `conda env create` behind an
@@ -165,8 +165,9 @@ conda activate usrp
 > Mac mini 2026-06-06: after download, B200 firmware loads in `uhd_usrp_probe`.)*
 
 ### FT232 / RTK / Saleae — folded into the conda env (no separate venvs)
-These used to be standalone venvs (steps 20/30/60). They're now just part of the
-single `usrp` conda env (step 10), so there's nothing extra to run:
+These used to be standalone venvs (old steps 20/30/60, pre-rename numbering).
+They're now just part of the
+single `usrp` conda env (step 020), so there's nothing extra to run:
 - **FT232_SCAN_IO** → `pyftdi` + conda `libusb` (verified detecting the FT232H
   `ftdi://ftdi:232h:1/1`).
 - **RTK_dev_for_cm-loc** → `pyserial`.
@@ -175,7 +176,7 @@ single `usrp` conda env (step 10), so there's nothing extra to run:
 Just `conda activate usrp` and use them. (The old per-tool venv scripts and
 `~/venvs/*` were removed — redundant once the deps live in the conda env.)
 
-### Step 50 — SCAN_sourcemeter — ❌ REMOVED (not viable on Apple Silicon)
+### SCAN_sourcemeter (old step 50) — ❌ REMOVED (not viable on Apple Silicon)
 The Keithley 2401 SMU sweeps (`SweepPV.ipynb`) drive the instruments over a
 **Keysight 82357B USB-GPIB** adapter (`GPIB0/1::24::INSTR`). This **cannot work
 on an Apple-Silicon Mac**, verified the hard way on 2026-06-06:
@@ -191,28 +192,14 @@ or switch the transport to a **Prologix GPIB-USB** or the **2401's RS-232** port
 (both are pure serial — work natively on Apple Silicon) and adapt `SweepPV.ipynb`.
 The step `50-sourcemeter-venv.sh` was removed from this kit.
 
-### Step 70 — gr-filerepeater OOT module (for GRC flowgraphs)
-`USRP_study_yishen/grc/*.grc` (B200_FileRec, B200_SpecAna) use blocks from the
-out-of-tree module **gr-filerepeater** (`filerepeater_AdvFileSink`,
-`filerepeater_StateOr`, `filerepeater_StateTimer`). Without it, GRC shows
-**"Missing Block"**. It's a C++/pybind11 OOT module (GNU Radio 3.9+) and must be
-**compiled against the GR 3.10 in the `usrp` env** — not available on
-conda-forge/pip.
-```sh
-./70-gr-filerepeater.sh          # clones ghostop14/gr-filerepeater -> ~/src, builds into $CONDA_PREFIX
-```
-> Source: <https://github.com/ghostop14/gr-filerepeater>. Builds into the conda
-> env so `gnuradio-companion` finds the block defs. Restart `grc` after.
-> Only needed if you open those GRC flowgraphs; the headless C++ apps don't use it.
-
-### Step 40 — remote access ⚠️ needs sudo (run interactively) ✅ verified
+### Step 040 — remote access ⚠️ needs sudo (run interactively) ✅ verified
 Enables **SSH (Remote Login)** + **Screen Sharing (VNC)**, prepares
 `~/.ssh/authorized_keys`, installs the **reverse-SOCKS proxy helpers**
 (`gitp` / `proxyon` / `proxyoff` in `~/.zshrc` — see [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md) §4), and prints this
 Mac's user / IP for collaborators.
 Run it as your normal user (it calls sudo itself — **don't** prefix with sudo):
 ```sh
-./40-ssh-remote.sh
+./setup-040-ssh-remote.sh
 ```
 
 **Screen Sharing** turns on from the script. **Remote Login (SSH) usually does
@@ -226,7 +213,7 @@ allowed. You'll see:
 2. Toggle **Remote Login** → **ON**
 3. Click the ⓘ next to it → set "Allow access for" to your user (or All users)
 
-Then re-running `./40-ssh-remote.sh` reports `Remote Login already On`.
+Then re-running `./setup-040-ssh-remote.sh` reports `Remote Login already On`.
 *(This is the path verified on the Mac mini 2026-06-03.)*
 
 > ⚠️ **Avoid the Full Disk Access route if a session is running in your
@@ -237,12 +224,26 @@ Then re-running `./40-ssh-remote.sh` reports `Remote Login already On`.
 > **Screen Sharing note:** if the `launchctl` path is refused, enable
 > **Screen Sharing** in the same *System Settings ▸ General ▸ Sharing* pane.
 
-### Step 80 — Headless field Wi-Fi AP (standalone, no uplink)
+### Step 050 — gr-filerepeater OOT module (for GRC flowgraphs)
+`USRP_study_yishen/grc/*.grc` (B200_FileRec, B200_SpecAna) use blocks from the
+out-of-tree module **gr-filerepeater** (`filerepeater_AdvFileSink`,
+`filerepeater_StateOr`, `filerepeater_StateTimer`). Without it, GRC shows
+**"Missing Block"**. It's a C++/pybind11 OOT module (GNU Radio 3.9+) and must be
+**compiled against the GR 3.10 in the `usrp` env** — not available on
+conda-forge/pip.
+```sh
+./setup-050-gr-filerepeater.sh          # clones ghostop14/gr-filerepeater -> ~/src, builds into $CONDA_PREFIX
+```
+> Source: <https://github.com/ghostop14/gr-filerepeater>. Builds into the conda
+> env so `gnuradio-companion` finds the block defs. Restart `grc` after.
+> Only needed if you open those GRC flowgraphs; the headless C++ apps don't use it.
+
+### Step 060 — Headless field Wi-Fi AP (standalone, no uplink)
 Make the mini broadcast its **own Wi-Fi AP at `192.168.2.1`** so a laptop joins
 and SSHes in **with no display/keyboard** — for field use. **Full walkthrough +
 reboot tests: [docs/field-setup.md](docs/field-setup.md).**
 ```sh
-./80-hotspot.sh        # automates the scriptable parts; walks the GUI parts
+./setup-060-hotspot.sh        # automates the scriptable parts; walks the GUI parts
 ```
 The script automates: **Wi-Fi cleanup** (so it won't auto-join an SSID at boot),
 **never-sleep + auto-restart on power failure**, **disable auto-updates**,
@@ -319,8 +320,8 @@ cd ~/Projects/LRLocal-V2/03-tag-template-gen-code && jupyter notebook
 ## 8. Operate it remotely / in the field → [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)
 
 Connecting in (SSH/VNC), rsync file sync, the detached field jobs
-(`field-jobs.sh`), and the `ddh-mac-0X` SSH shortcuts + offline-mini internet
-(`host-ssh-config.sh`) moved to **[FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)**.
+(`field-010-jobs.sh`), and the `ddh-mac-0X` SSH shortcuts + offline-mini internet
+(`host-010-ssh-config.sh`) moved to **[FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)**.
 
 ---
 
@@ -328,11 +329,11 @@ Connecting in (SSH/VNC), rsync file sync, the detached field jobs
 
 | Symptom | Fix |
 |---|---|
-| `CondaToSNonInteractiveError` on env create | `conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main` (and `…/pkgs/r`) — step 10 does this automatically |
-| `conda env create` can't solve `uhd=4.9` | step 10 auto-retries unpinned; or edit `env/usrp-env.yml` to `uhd` |
+| `CondaToSNonInteractiveError` on env create | `conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main` (and `…/pkgs/r`) — step 020 does this automatically |
+| `conda env create` can't solve `uhd=4.9` | step 020 auto-retries unpinned; or edit `env/usrp-env.yml` to `uhd` |
 | pyftdi `Access denied` / can't open FT232H | the FTDI **VCP/D2XX** driver grabbed the device — don't install it; use a powered hub; libusb backend only |
 | `show_devices()` lists nothing | bad cable/power, or not an FT232H |
-| Homebrew install hangs | it needs your sudo password — run `./00-base-tools.sh` in an interactive Terminal |
+| Homebrew install hangs | it needs your sudo password — run `./setup-010-base-tools.sh` in an interactive Terminal |
 | Remote Login / Screen Sharing won't enable from script | grant Terminal Full Disk Access, or toggle in System Settings ▸ General ▸ Sharing |
 | `cmake` finds Homebrew UHD instead of conda's | `conda activate usrp` BEFORE `cmake` so `CONDA_PREFIX` wins (the CMakeLists prepends it) |
 
@@ -343,10 +344,10 @@ Connecting in (SSH/VNC), rsync file sync, the detached field jobs
 - **Xilinx Vivado** + USRP X310 FPGA/RFNoC toolchain — only for rebuilding
   bitstreams / simulating RTL (`rx-fft*`, `rx-fir*`, FT232 & LRLocal `verilog/`).
 - **Foundry PDK IP** (TSMC 28 nm macros) — gitignored, not redistributable.
-- **SCAN_sourcemeter / GPIB** — *not available on Apple Silicon* (see Step 50
+- **SCAN_sourcemeter / GPIB** — *not available on Apple Silicon* (see the removed old step 50
   above). The Keysight 82357B has no macOS driver; NI GPIB kexts are x86_64-only
   and NI-VISA dropped GPIB. Run on an Intel Mac, or move to a Prologix GPIB-USB /
   RS-232 (serial) adapter. Removed from this kit.
 - **Saleae Logic 2 desktop app** — capture software for the Saleae analyzer
-  (the `logic2-automation` pip package in step 60 only drives it). Install from
+  (the `logic2-automation` pip package in the `usrp` env only drives it). Install from
   <https://www.saleae.com/downloads/>; enable its Automation server to script it.

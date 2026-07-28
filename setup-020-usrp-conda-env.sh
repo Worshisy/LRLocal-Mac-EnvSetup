@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 10-usrp-conda-env.sh — Miniconda + the single `usrp` env.
+# setup-020-usrp-conda-env.sh — Miniconda + the single `usrp` env.
 #
 # Installs Miniconda (Apple-Silicon) if absent, then builds the one conda env
 # that covers ALL USRP / GNU Radio (GRC) work AND the LRLocal-V2 Python branch,

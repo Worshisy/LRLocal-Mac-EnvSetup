@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# update-repos.sh — git pull this kit + the 3 project repos on this Mac (mini).
-# (LRLocal-V2 is deliberately NOT in the list — not needed on the minis.)
+# field-020-update-repos.sh — git pull this kit + the project repos on this Mac
+# (mini). (FT232_SCAN_IO is deliberately NOT in the list — it doesn't need
+# updating on the minis; it's still cloned once by setup-030-clone-repos.sh.)
 #
 # Pulls go through the reverse SOCKS tunnel at localhost:1080 that rides along
 # on every operator `ssh ddh-mac-0X` connection (see FIELD-RUNBOOK.md §4) — the
@@ -9,10 +10,10 @@
 # merged or rebased — it's reported and left for you to resolve.
 #
 # Usage (on the mini, inside an operator SSH session):
-#   ./update-repos.sh                     # update all (kit pulls itself last)
-#   REPO_BASE=/path ./update-repos.sh     # override repo autodetect
-#   WITH_SUBMODULES=1 ./update-repos.sh   # also update USRP uhd+gnuradio submodules (GBs)
-#   PROXY=socks5h://127.0.0.1:1081 ./update-repos.sh   # different tunnel port
+#   ./field-020-update-repos.sh                     # update all (kit pulls itself last)
+#   REPO_BASE=/path ./field-020-update-repos.sh     # override repo autodetect
+#   WITH_SUBMODULES=1 ./field-020-update-repos.sh   # also update USRP uhd+gnuradio submodules (GBs)
+#   PROXY=socks5h://127.0.0.1:1081 ./field-020-update-repos.sh   # different tunnel port
 set -u
 
 say()  { printf '\n\033[1;36m[update] %s\033[0m\n' "$*"; }
@@ -20,10 +21,10 @@ ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPOS=(FT232_SCAN_IO USRP_study_yishen RTK_dev_for_cm-loc)   # [c] LRLocal-V2 dropped (Yi, 2026-07-28)
+REPOS=(LRLocal-V2 USRP_study_yishen RTK_dev_for_cm-loc)   # [c] FT232_SCAN_IO dropped (Yi, 2026-07-28)
 TUNNEL=socks5h://127.0.0.1:1080
 
-# same lookup as field-jobs.sh: kit's parent dir, then ~/Projects, then ~
+# same lookup as field-010-jobs.sh: kit's parent dir, then ~/Projects, then ~
 find_dir() {  # $1 = repo name
   for b in "${REPO_BASE:-}" "$(cd "$HERE/.." && pwd)" "$HOME/Projects" "$HOME"; do
     [ -n "$b" ] && [ -d "$b/$1" ] && { echo "$b/$1"; return 0; }
@@ -59,6 +60,16 @@ update_one() {  # $1 = repo dir
   if [ $rc -ne 0 ]; then
     warn "$name: pull FAILED (diverged / conflict / auth?) — resolve manually:"
     printf '%s\n' "$out" | sed 's/^/      /'
+    # [c] debris from a pull that died mid-checkout (e.g. disk full) shows up
+    # as untracked files AND/OR "local changes" blocking the retry. Triage:
+    # content identical to origin/main = crash debris; different = real edits.
+    if printf '%s' "$out" | grep -qE "untracked working tree files would be overwritten|Your local changes to the following files would be overwritten"; then
+      warn "$name: blocked by local files — either real edits made on this Mac,"
+      warn "  or leftovers of a pull that died mid-checkout (disk full?). Triage:"
+      warn "  git -C $dir diff --stat origin/main   # empty/irrelevant = debris"
+      warn "  debris  → git -C $dir reset --hard origin/main    # DISCARDS them"
+      warn "  real    → git -C $dir stash -u && git -C $dir merge --ff-only origin/main && git -C $dir stash pop"
+    fi
     return 1
   fi
   after="$(git -C "$dir" rev-parse --short HEAD 2>/dev/null)"

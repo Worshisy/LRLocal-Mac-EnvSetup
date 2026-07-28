@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 70-gr-filerepeater.sh — build the gr-filerepeater OOT module into the usrp env.
+# setup-050-gr-filerepeater.sh — build the gr-filerepeater OOT module into the usrp env.
 #
 # The USRP_study_yishen GRC flowgraphs (grc/B200_FileRec.grc, B200_SpecAna.grc)
 # use blocks from the out-of-tree module gr-filerepeater (ghostop14):
@@ -24,7 +24,7 @@ CONDA_SH=""
 for d in "$HOME/miniconda3" "$HOME/miniforge3" "$HOME/anaconda3"; do
   [ -f "$d/etc/profile.d/conda.sh" ] && CONDA_SH="$d/etc/profile.d/conda.sh" && break
 done
-[ -z "$CONDA_SH" ] && { warn "conda not found — run ./10-usrp-conda-env.sh first"; exit 1; }
+[ -z "$CONDA_SH" ] && { warn "conda not found — run ./setup-020-usrp-conda-env.sh first"; exit 1; }
 # shellcheck disable=SC1090
 source "$CONDA_SH"; set +u; conda activate usrp; set -u
 ok "CONDA_PREFIX=$CONDA_PREFIX"

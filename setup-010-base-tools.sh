@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 00-base-tools.sh — base prerequisites shared by everything else.
+# setup-010-base-tools.sh — base prerequisites shared by everything else.
 #   * Xcode Command Line Tools (git, clang, make)
 #   * Homebrew (package manager)
 #   * libusb (USB backend pyftdi needs for the FT232H, step 20)
@@ -15,7 +15,7 @@ warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 # Run as your NORMAL user, NOT sudo — Homebrew refuses to install as root and
 # calls sudo itself only where needed.
 if [ "$(id -u)" -eq 0 ]; then
-  warn "Don't run this with sudo. Run it as your normal user:  ./00-base-tools.sh"
+  warn "Don't run this with sudo. Run it as your normal user:  ./setup-010-base-tools.sh"
   exit 1
 fi
 

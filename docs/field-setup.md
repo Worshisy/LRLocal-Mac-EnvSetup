@@ -3,7 +3,7 @@
 > **Review status:** ⏳ Unreviewed *(default; update when Yi reviews)*
 >
 > ✍️ *Claude-authored summary (from Yi's field-setup Q/A).* The scriptable parts
-> are automated by [`../80-hotspot.sh`](../80-hotspot.sh); the GUI/sensitive
+> are automated by [`../setup-060-hotspot.sh`](../setup-060-hotspot.sh); the GUI/sensitive
 > steps (FileVault off, auto-login, the Internet-Sharing AP SSID/password) are
 > manual and walked through here. **Run once with a display attached, and pass
 > the Phase-3 reboot tests before going to the field.**
@@ -12,10 +12,10 @@
 
 **Architecture:** The Mac mini broadcasts its own Wi-Fi access point (via macOS Internet Sharing) with no internet uplink. The laptop joins this AP and SSHes to the mini at `192.168.2.1`. A "dummy uplink" (Ethernet loopback plug, tiny USB switch, or just a known disconnected interface) gives macOS the link it needs to start Internet Sharing.
 
-> **`80-hotspot.sh` automates:** Wi-Fi cleanup (§1.6), never-sleep + auto-restart
+> **`setup-060-hotspot.sh` automates:** Wi-Fi cleanup (§1.6), never-sleep + auto-restart
 > (§1.4–1.5), disable updates (§1.9), and the sharing-restart LaunchDaemon (§1.8).
 > **You still do by hand:** FileVault off (§1.1), auto-login (§1.3), and the
-> Internet Sharing AP config (§1.7). SSH (§1.2) is step 40 of the main kit.
+> Internet Sharing AP config (§1.7). SSH (§1.2) is step 040 of the main kit.
 
 ---
 
@@ -40,7 +40,7 @@ fdesetup status          # expected: FileVault is Off.
 FileVault must be off for auto-login. With it on, the mini can't survive a power loss — it sits at the pre-boot recovery screen forever.
 
 ### 1.2 Enable SSH server
-System Settings → General → Sharing → toggle **Remote Login** on. *(Main kit step 40.)*
+System Settings → General → Sharing → toggle **Remote Login** on. *(Main kit step 040.)*
 ```bash
 sudo systemsetup -getremotelogin    # expected: Remote Login: On
 ```
@@ -53,14 +53,14 @@ defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser   # expec
 sudo sysadminctl -autologin set -userName "ddh-macmini4-0X" -password -
 ```
 
-### 1.4 Never sleep, never display sleep   *(automated by 80-hotspot.sh)*
+### 1.4 Never sleep, never display sleep   *(automated by setup-060-hotspot.sh)*
 ```bash
 sudo pmset -a sleep 0 displaysleep 0 disksleep 0
 sudo pmset -a powernap 0 standby 0 hibernatemode 0
 pmset -g                 # expect: sleep 0, displaysleep 0, disksleep 0
 ```
 
-### 1.5 Auto-restart on power failure   *(automated by 80-hotspot.sh)*
+### 1.5 Auto-restart on power failure   *(automated by setup-060-hotspot.sh)*
 ```bash
 sudo pmset -a autorestart 1
 sudo systemsetup -setrestartfreeze on
@@ -68,7 +68,7 @@ sudo systemsetup -setrestartpowerfailure on
 ```
 Also confirm System Settings → Energy → "Start up automatically after a power failure" is checked.
 
-### 1.6 Wi-Fi cleanup (critical for field reliability)   *(automated by 80-hotspot.sh)*
+### 1.6 Wi-Fi cleanup (critical for field reliability)   *(automated by setup-060-hotspot.sh)*
 If the mini auto-joins any known SSID at boot, the AP cannot start. Remove all preferred networks (use your actual Wi-Fi device — `en0` or `en1`):
 ```bash
 networksetup -listpreferredwirelessnetworks en0
@@ -94,7 +94,7 @@ ps aux | grep -E "bootpd|InternetSharing" | grep -v grep
 ```
 Menu bar shows the upward AP arrow. From the laptop, **confirm the lock icon** on the SSID — there's a macOS bug where the password silently fails (network shows open). If unlocked, toggle Sharing off/on once.
 
-### 1.8 Make Internet Sharing survive reboots   *(automated by 80-hotspot.sh)*
+### 1.8 Make Internet Sharing survive reboots   *(automated by setup-060-hotspot.sh)*
 The toggle persists but the AP often fails to broadcast after a cold boot. A LaunchDaemon kicks it 30 s after boot:
 ```bash
 sudo tee /Library/LaunchDaemons/com.local.sharing-restart.plist > /dev/null <<'EOF'
@@ -120,7 +120,7 @@ sudo chmod 644 /Library/LaunchDaemons/com.local.sharing-restart.plist
 sudo launchctl load -w /Library/LaunchDaemons/com.local.sharing-restart.plist
 ```
 
-### 1.9 Disable disruptions   *(automated by 80-hotspot.sh)*
+### 1.9 Disable disruptions   *(automated by setup-060-hotspot.sh)*
 ```bash
 sudo softwareupdate --schedule off
 sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload -bool false

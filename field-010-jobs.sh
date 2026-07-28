@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# field-jobs.sh — run the long field jobs in detached tmux sessions so they keep
+# field-010-jobs.sh — run the long field jobs in detached tmux sessions so they keep
 # running after you disconnect SSH, and you can re-attach to see live output.
 #
 # RUN THIS ON THE SLAVE (the field Mac mini with the B200 + RTK rover attached),
-# not on your laptop. SSH in, run `./field-jobs.sh start`, then disconnect; the
-# jobs keep running. Reconnect later and `./field-jobs.sh attach rx` (or rtk) to
-# watch, or `./field-jobs.sh logs rx` to tail the log. Detach from a tmux view
+# not on your laptop. SSH in, run `./field-010-jobs.sh start`, then disconnect; the
+# jobs keep running. Reconnect later and `./field-010-jobs.sh attach rx` (or rtk) to
+# watch, or `./field-010-jobs.sh logs rx` to tail the log. Detach from a tmux view
 # with Ctrl-b then d (leaves it running).
 #
 # Jobs:
@@ -13,11 +13,11 @@
 #   rx   — USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh (continuous RX → SSD, AGC)
 #
 # Usage:
-#   ./field-jobs.sh start [rtk|rx]     # start both, or just one
-#   ./field-jobs.sh attach <rtk|rx>    # attach to live output (Ctrl-b d to detach)
-#   ./field-jobs.sh logs   <rtk|rx>    # tail -f the log file
-#   ./field-jobs.sh status             # what's running
-#   ./field-jobs.sh stop  [rtk|rx]     # stop both, or one
+#   ./field-010-jobs.sh start [rtk|rx]     # start both, or just one
+#   ./field-010-jobs.sh attach <rtk|rx>    # attach to live output (Ctrl-b d to detach)
+#   ./field-010-jobs.sh logs   <rtk|rx>    # tail -f the log file
+#   ./field-010-jobs.sh status             # what's running
+#   ./field-010-jobs.sh stop  [rtk|rx]     # stop both, or one
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
 #                        RX_FREQ=2.44e9   (pre-answers the RX center-freq prompt)
 set -u
@@ -37,7 +37,7 @@ done
 TMUX_BIN="$(command -v tmux || true)"
 [ -z "$TMUX_BIN" ] && [ -x "$HOME/miniconda3/envs/usrp/bin/tmux" ] && TMUX_BIN="$HOME/miniconda3/envs/usrp/bin/tmux"
 need_tmux() { [ -n "$TMUX_BIN" ] || { warn "tmux not found. Add it: conda install -n usrp tmux  (or brew install tmux)"; exit 1; }; }
-need_conda() { [ -n "$CONDA_SH" ] || { warn "conda not found — run 10-usrp-conda-env.sh first"; exit 1; }; }
+need_conda() { [ -n "$CONDA_SH" ] || { warn "conda not found — run setup-020-usrp-conda-env.sh first"; exit 1; }; }
 
 # ── locate the repos (default: parent of this kit, then ~/Projects, then ~) ───
 find_dir() {  # $1 = repo name
@@ -58,7 +58,7 @@ wrap() {  # $1=dir  $2=command  $3=logfile
 # Spotlight indexing on the capture SSD competes with the RX writer at 50 MS/s
 # (overflows) and makes run.sh stop to ask. Disable it on every mounted capture
 # volume — done at EACH rx start because macOS can re-enable it after a reboot/
-# remount. Needs sudo (you're running field-jobs.sh interactively, so fine).
+# remount. Needs sudo (you're running field-010-jobs.sh interactively, so fine).
 disable_spotlight_capture() {
   local found=0 vol
   for vol in /Volumes/USRP* "${CAPTURE_VOL:-}"; do
@@ -100,7 +100,7 @@ start_one() {
   case "$1" in
     rtk)
       [ -z "$RTK_DIR" ] && { warn "RTK_dev_for_cm-loc not found (set REPO_BASE)"; return 1; }
-      "$TMUX_BIN" has-session -t rtk 2>/dev/null && { ok "rtk already running (attach: ./field-jobs.sh attach rtk)"; return 0; }
+      "$TMUX_BIN" has-session -t rtk 2>/dev/null && { ok "rtk already running (attach: ./field-010-jobs.sh attach rtk)"; return 0; }
       local port="${RTK_PORT:-$(ls /dev/cu.usbmodem* 2>/dev/null | head -1)}"
       [ -z "$port" ] && warn "no /dev/cu.usbmodem* found — plug in the rover, or set RTK_PORT"
       local web="${RX_WEBPORT:-8000}"
@@ -109,7 +109,7 @@ start_one() {
       ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)" ;;
     rx)
       [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
-      "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-jobs.sh attach rx)"; return 0; }
+      "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-010-jobs.sh attach rx)"; return 0; }
       disable_spotlight_capture   # so run.sh doesn't block on the Spotlight prompt / overflow
       ask_rx_freq                 # [c] confirm center freq every start; --freq overrides run.conf
       local freq_args=""
@@ -126,12 +126,12 @@ case "$CMD" in
     need_tmux; need_conda
     say "Starting field jobs in tmux (survive SSH disconnect)"
     if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; fi
-    say "Reconnect later, then:  ./field-jobs.sh attach rx   (or rtk) ·  ./field-jobs.sh logs rx" ;;
+    say "Reconnect later, then:  ./field-010-jobs.sh attach rx   (or rtk) ·  ./field-010-jobs.sh logs rx" ;;
   attach)
-    need_tmux; [ -z "$TARGET" ] && { warn "which? ./field-jobs.sh attach rx|rtk"; exit 1; }
+    need_tmux; [ -z "$TARGET" ] && { warn "which? ./field-010-jobs.sh attach rx|rtk"; exit 1; }
     exec "$TMUX_BIN" attach -t "$TARGET" ;;
   logs)
-    [ -z "$TARGET" ] && { warn "which? ./field-jobs.sh logs rx|rtk"; exit 1; }
+    [ -z "$TARGET" ] && { warn "which? ./field-010-jobs.sh logs rx|rtk"; exit 1; }
     exec tail -f "$LOGDIR/$TARGET.log" ;;
   status)
     need_tmux; say "tmux sessions"; "$TMUX_BIN" ls 2>/dev/null || echo "  (none)"

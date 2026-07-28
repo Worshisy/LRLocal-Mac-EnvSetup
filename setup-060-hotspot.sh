@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 80-hotspot.sh — make this Mac a STANDALONE FIELD Wi-Fi AP (no internet uplink).
+# setup-060-hotspot.sh — make this Mac a STANDALONE FIELD Wi-Fi AP (no internet uplink).
 #
 # Implements the headless field-setup method (full walkthrough + reboot tests in
 # docs/field-setup.md). The mini broadcasts its own Wi-Fi AP at 192.168.2.1 via
@@ -47,7 +47,7 @@ sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyI
 ok "auto-updates off"
 
 # Spotlight on the capture SSD competes with the RX writer at 50 MS/s (overflows)
-# and makes run.sh stop to ask. Disable it on the capture volume(s). field-jobs.sh
+# and makes run.sh stop to ask. Disable it on the capture volume(s). field-010-jobs.sh
 # re-applies this at each RX start in case macOS re-enables it after a reboot.
 say "Disabling Spotlight on capture SSD(s) /Volumes/USRP* (+ \$CAPTURE_VOL)"
 _sl_found=0
@@ -56,7 +56,7 @@ for vol in /Volumes/USRP* "${CAPTURE_VOL:-}"; do
   _sl_found=1
   sudo mdutil -i off "$vol" >/dev/null 2>&1 && ok "Spotlight off: $vol" || warn "couldn't disable Spotlight on $vol"
 done
-[ "$_sl_found" = 1 ] || warn "no capture SSD mounted now — field-jobs.sh also disables it at RX start"
+[ "$_sl_found" = 1 ] || warn "no capture SSD mounted now — field-010-jobs.sh also disables it at RX start"
 
 # ── 3. Boot-time AP re-kick daemon ────────────────────────────────────────────
 # After a cold boot Internet Sharing's toggle persists but the AP often fails to
@@ -92,7 +92,7 @@ cat <<GUI
         (required for auto-login; verify: fdesetup status -> Off)
     • Auto-login:  System Settings ▸ Users & Groups ▸ "Automatically log in as" ▸ your user
         CLI fallback:  sudo sysadminctl -autologin set -userName "$(whoami)" -password -
-    • SSH: ensure Remote Login is ON (step 40 / 40-ssh-remote.sh).
+    • SSH: ensure Remote Login is ON (step 040 / setup-040-ssh-remote.sh).
 
   THE Wi-Fi AP (Internet Sharing):
     • Give built-in Ethernet a DUMMY uplink: loopback plug / dead switch / bare
