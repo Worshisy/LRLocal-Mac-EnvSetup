@@ -24,9 +24,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOS=(LRLocal-V2 USRP_study_yishen RTK_dev_for_cm-loc)   # [c] FT232_SCAN_IO dropped (Yi, 2026-07-28)
 TUNNEL=socks5h://127.0.0.1:1080
 
-# same lookup as field-010-jobs.sh: kit's parent dir, then ~/Projects, then ~
+# [c] like field-011's lookup: kit parent, then /Volumes/USRP* (repos live on
+# the capture SSD on some minis), then ~/Projects, then ~
 find_dir() {  # $1 = repo name
-  for b in "${REPO_BASE:-}" "$(cd "$HERE/.." && pwd)" "$HOME/Projects" "$HOME"; do
+  for b in "${REPO_BASE:-}" "$(cd "$HERE/.." && pwd)" /Volumes/USRP* "$HOME/Projects" "$HOME"; do
     [ -n "$b" ] && [ -d "$b/$1" ] && { echo "$b/$1"; return 0; }
   done
   return 1
