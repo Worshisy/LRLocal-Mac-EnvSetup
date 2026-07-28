@@ -23,7 +23,7 @@ for a in "$@"; do
     *) STEPS+=("$a") ;;
   esac
 done
-[ ${#STEPS[@]} -eq 0 ] && STEPS=(010 020 040 050 060)
+[ ${#STEPS[@]} -eq 0 ] && STEPS=(010 020 030 040 050 060)
 
 # NOTE: no `declare -A` here — macOS ships bash 3.2 (no associative arrays).
 # Use case-based lookups so this runs on the stock /bin/bash of a fresh Mac.
@@ -42,7 +42,7 @@ desc_for() {
   case "$1" in
     010|00) echo "Base tools: Xcode CLT, Homebrew, libusb (optional — conda has its own)" ;;
     020|10) echo "Miniconda + single 'usrp' env — ALL tools (USRP/GRC, LRLocal-V2 Py, FT232, RTK, Saleae)" ;;
-    030)    echo "Clone the 3 project repos + rx-data symlink (interactive gh auth; not in the default run)" ;;
+    030)    echo "Clone the 4 project repos + rx-data symlink (asks GitHub auth if not logged in)" ;;
     040|40) echo "Remote access: SSH + Screen Sharing + reverse-SOCKS proxy helpers" ;;
     050|70) echo "gr-filerepeater OOT module (build into usrp env) — GRC flowgraph blocks" ;;
     060|80) echo "Wi-Fi hotspot (macOS Internet Sharing)" ;;

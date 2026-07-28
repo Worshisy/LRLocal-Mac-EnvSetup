@@ -127,7 +127,9 @@ It also drops a convenience symlink **`<kit-parent>/rx-data` → `USRP_study_yis
 # or per-step:  ./setup-000-all.sh 010   etc.
 ```
 
-What each step does and its state on the test machine:
+What each step does and its state on the test machine. (Step 030 = the §4
+clone script — it's part of the default run; answer `n` at its pause if you
+already cloned.)
 
 ### Step 010 — base tools ⚠️ needs sudo (run interactively) ✅ verified
 Xcode CLT check, **Homebrew**, **libusb**. This is the **default first step** —
