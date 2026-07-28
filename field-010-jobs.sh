@@ -141,5 +141,7 @@ case "$CMD" in
     if [ -n "$TARGET" ]; then "$TMUX_BIN" kill-session -t "$TARGET" 2>/dev/null && ok "stopped $TARGET" || warn "no session $TARGET";
     else for s in rtk rx; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
   *)
-    sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    # [c] print the whole header comment block (stops at the first non-# line,
+    # so it survives header growth — the old fixed 2,30p range leaked code)
+    awk 'NR==1{next} !/^#/{exit} {sub(/^# ?/,""); print}' "${BASH_SOURCE[0]}" ;;
 esac
