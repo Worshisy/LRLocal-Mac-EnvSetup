@@ -20,6 +20,7 @@
 #   ./field-000-jobs.sh stop  [rtk|rx]     # stop both, or one
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
 #                        RX_FREQ=2.44e9   (pre-answers the RX center-freq prompt)
+#                        RX_START=18:30|now  RX_START_TZ=utc  (pre-answer the start-time prompt)
 set -u
 
 CMD="${1:-help}"; TARGET="${2:-}"
@@ -103,6 +104,36 @@ ask_rx_freq() {
   done
 }
 
+# [c] after the freq prompt, ask an optional deferred start (run.sh --start).
+# Enter = start now. HH:MM local; a past time = tomorrow (confirmed here, and
+# run.sh auto-defers non-interactively since its stdin is /dev/null in tmux).
+# RX_START=HH:MM (or "now") pre-answers.
+RX_START_HHMM=""
+ask_rx_start() {
+  local t="${RX_START:-}" ans now_m t_m
+  [ "$t" = "now" ] && t=""
+  if [ ! -t 0 ]; then RX_START_HHMM="$t"; return 0; fi
+  while :; do
+    if [ -z "$t" ]; then
+      printf '  RX start time HH:MM local [Enter = start now]: '
+      read -r t
+      [ -z "$t" ] && { RX_START_HHMM=""; return 0; }
+    fi
+    case "$t" in
+      [0-9]:[0-5][0-9]|[0-1][0-9]:[0-5][0-9]|2[0-3]:[0-5][0-9])
+        now_m=$((10#$(date +%H) * 60 + 10#$(date +%M)))
+        t_m=$((10#${t%%:*} * 60 + 10#${t##*:}))
+        if [ "$t_m" -le "$now_m" ]; then
+          printf '  ! %s already passed today — start TOMORROW at %s? [y = tomorrow / Enter = re-enter]: ' "$t" "$t"
+          read -r ans
+          case "$ans" in [yY]*) RX_START_HHMM="$t"; return 0 ;; *) t=""; continue ;; esac
+        fi
+        RX_START_HHMM="$t"; return 0 ;;
+      *) warn "'$t' doesn't look like HH:MM (e.g. 18:30)"; t="" ;;
+    esac
+  done
+}
+
 start_one() {
   case "$1" in
     rtk)
@@ -119,11 +150,14 @@ start_one() {
       "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-000-jobs.sh attach rx)"; return 0; }
       disable_spotlight_capture   # so run.sh doesn't block on the Spotlight prompt / overflow
       ask_rx_freq                 # [c] confirm center freq every start; --freq overrides run.conf
+      ask_rx_start                # [c] optional deferred start (run.sh --start)
       local freq_args=""
       [ -n "$RX_FREQ_HZ" ] && freq_args=" --freq $RX_FREQ_HZ"
+      [ -n "$RX_START_HHMM" ] && freq_args="$freq_args --start $RX_START_HHMM${RX_START_TZ:+ --start-tz $RX_START_TZ}"
       # run.sh respects the active conda env; FORCE_RUN=1 is a non-tty fallback.
-      "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "FORCE_RUN=1 ./run.sh$freq_args" "$LOGDIR/rx.log")"
-      ok "rx started (freq ${RX_FREQ_HZ:-run.conf default} Hz) → 01-rx-to-ssd-b200-agc/run.sh  (log: $LOGDIR/rx.log)" ;;
+      # stdin </dev/null so no run.sh prompt can ever hang the detached pane.
+      "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "FORCE_RUN=1 ./run.sh$freq_args </dev/null" "$LOGDIR/rx.log")"
+      ok "rx started (freq ${RX_FREQ_HZ:-run.conf default} Hz${RX_START_HHMM:+, deferred to $RX_START_HHMM}) → 01-rx-to-ssd-b200-agc/run.sh  (log: $LOGDIR/rx.log)" ;;
     *) warn "unknown job '$1' (use rtk or rx)"; return 1 ;;
   esac
 }

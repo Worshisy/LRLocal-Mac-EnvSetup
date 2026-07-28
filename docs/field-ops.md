@@ -45,8 +45,9 @@ ssh ddh-macmini4-0X@192.168.2.1     # long form, works anywhere
 ```sh
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh start      # RTK monitor + USRP RX→SSD, both in tmux
 ```
-Starting **rx** prompts for the **RX center frequency in Hz** — type e.g. `5.8e9`,
-or press Enter to keep the run.conf default shown in the prompt.
+Starting **rx** prompts for the **RX center frequency in Hz** (e.g. `5.8e9`;
+Enter = run.conf default), then an optional **start time** (`HH:MM` local for a
+deferred start; Enter = start now; a past time runs tomorrow).
 Now **close SSH / shut the laptop** — both jobs keep running on the mini.
 
 Start just one if you want: `field-000-jobs.sh start rtk`  or  `field-000-jobs.sh start rx`.
