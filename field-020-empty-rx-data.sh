@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# field-001-empty-rx-data.sh — DELETE all RX capture data on this Mac (mini), after
+# field-020-empty-rx-data.sh — DELETE all RX capture data on this Mac (mini), after
 # THREE typed confirmations. Interactive only; nothing is removed until all
 # three pass, and any wrong answer aborts immediately.
 #

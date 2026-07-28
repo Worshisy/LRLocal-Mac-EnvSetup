@@ -86,7 +86,7 @@ rsync -avzP ddh-mac-0X:rx-data/  ~/field-data/
 Capture SSD full (rx job dead, git pulls failing with "No space left")? After
 offloading, wipe the captures on the mini — takes **3 typed confirmations**:
 ```sh
-~/LRLocal-Mac-EnvSetup/field-001-empty-rx-data.sh
+~/LRLocal-Mac-EnvSetup/field-020-empty-rx-data.sh
 ```
 
 ## 6b. Give the mini internet through your laptop (git pull, installs)

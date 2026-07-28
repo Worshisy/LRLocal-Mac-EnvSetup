@@ -135,7 +135,7 @@ to resolve. `WITH_SUBMODULES=1` also updates USRP's uhd+gnuradio source (GBs).
 
 When the capture SSD fills up (a full disk kills the rx job AND git pulls):
 ```sh
-~/LRLocal-Mac-EnvSetup/field-001-empty-rx-data.sh
+~/LRLocal-Mac-EnvSetup/field-020-empty-rx-data.sh
 ```
 It resolves the RX data dir (`RX_DATA_DIR`/`run.conf OUT`/`USRP_study_yishen/data`,
 also reachable via the `<kit-parent>/rx-data` symlink), refuses while the rx job
