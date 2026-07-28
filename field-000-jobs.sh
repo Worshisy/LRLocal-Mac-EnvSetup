@@ -19,7 +19,7 @@
 #   ./field-000-jobs.sh status             # what's running
 #   ./field-000-jobs.sh stop  [rtk|rx]     # stop both, or one
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
-#                        RX_FREQ=2.44e9   (pre-answers the RX center-freq prompt)
+#                        RX_FREQ=2.55     (pre-answers the freq prompt; GHz, or ≥1e6 = Hz)
 #                        RX_START=18:30|now  RX_START_TZ=utc  (pre-answer the start-time prompt)
 set -u
 
@@ -83,24 +83,33 @@ disable_spotlight_capture() {
   [ "$found" = 1 ] || warn "no capture SSD mounted (/Volumes/USRP* or \$CAPTURE_VOL) — skipping Spotlight step"
 }
 
-# [c] Always ask the RX center frequency at each rx start (Yi, 2026-07-28).
+# [c] Always ask the RX center frequency at each rx start — in GHz (Yi: type
+# 2.55, not 2.55e9). Values < 1000 are GHz; larger are taken as Hz, so
+# 2.44e9 / 915e6 still work. Result must land in the B200 range 70 MHz–6 GHz.
 # Enter keeps the run.conf FREQ; RX_FREQ=… pre-answers (also the no-tty path).
 # Result in RX_FREQ_HZ (global — the caller runs under $(), so no echo/capture).
 RX_FREQ_HZ=""
 ask_rx_freq() {
-  local conf_freq; conf_freq="$(sed -n 's/^FREQ=\([^ ]*\).*/\1/p' "$RX_DIR/run.conf" 2>/dev/null | head -1)"
-  RX_FREQ_HZ="${RX_FREQ:-}"
-  if [ -z "$RX_FREQ_HZ" ] && [ ! -t 0 ]; then
+  local conf_freq conf_ghz in hz
+  conf_freq="$(sed -n 's/^FREQ=\([^ ]*\).*/\1/p' "$RX_DIR/run.conf" 2>/dev/null | head -1)"
+  conf_ghz="$(awk -v f="${conf_freq:-0}" 'BEGIN{if (f+0 > 0) printf "%.6g", f/1e9}')"
+  in="${RX_FREQ:-}"
+  if [ -z "$in" ] && [ ! -t 0 ]; then
     warn "no tty to ask RX center freq — using run.conf FREQ=${conf_freq:-?} (set RX_FREQ to choose)"
     RX_FREQ_HZ="$conf_freq"; return 0
   fi
-  while [ -z "$RX_FREQ_HZ" ]; do
-    printf '  RX center frequency in Hz [%s]: ' "${conf_freq:-run.conf default}"
-    read -r RX_FREQ_HZ
-    [ -z "$RX_FREQ_HZ" ] && RX_FREQ_HZ="$conf_freq"
-    case "$RX_FREQ_HZ" in
-      ''|*[!0-9.eE+-]*) warn "'$RX_FREQ_HZ' doesn't look like a frequency in Hz (e.g. 2.44e9)"; RX_FREQ_HZ="" ;;
+  while :; do
+    if [ -z "$in" ]; then
+      printf '  RX center frequency in GHz [%s]: ' "${conf_ghz:-run.conf default}"
+      read -r in
+      [ -z "$in" ] && { RX_FREQ_HZ="$conf_freq"; return 0; }
+    fi
+    case "$in" in
+      ''|*[!0-9.eE+-]*) warn "'$in' doesn't look like a number (e.g. 2.55 = 2.55 GHz)"; in=""; continue ;;
     esac
+    hz="$(awk -v x="$in" 'BEGIN{v=x+0; if (v<1000) v*=1e9; if (v>=70e6 && v<=6e9) printf "%.10g", v}')"
+    [ -z "$hz" ] && { warn "'$in' is outside the B200 range 70 MHz – 6 GHz (type GHz, e.g. 2.55)"; in=""; continue; }
+    RX_FREQ_HZ="$hz"; return 0
   done
 }
 

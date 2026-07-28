@@ -88,12 +88,14 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
 - RTK web dashboard is reachable from the laptop at **`http://192.168.2.1:8000`**.
 - Auto-detects repo locations (kit's parent dir / `~/Projects` / `~`) and the RTK
   serial port. Override: `REPO_BASE=…  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000`.
-- Starting **rx** always asks for the **RX center frequency** (Enter = keep the
-  run.conf `FREQ`, shown in the prompt), then an optional **start time** —
+- Starting **rx** always asks for the **RX center frequency in GHz** — type
+  `2.55` for 2.55 GHz (Hz forms like `915e6` also accepted; checked against the
+  B200 70 MHz–6 GHz range; Enter = keep the run.conf `FREQ`, shown in the
+  prompt) — then an optional **start time** —
   Enter = start now, or `HH:MM` local for a deferred start (`run.sh --start`;
   a time already past today schedules for tomorrow, confirmed at the prompt).
   The prompt shows the machine's current time.
-  Pre-answer with `RX_FREQ=2.44e9 RX_START=18:30 … field-000-jobs.sh start`
+  Pre-answer with `RX_FREQ=2.55 RX_START=18:30 … field-000-jobs.sh start`
   (`RX_START=now` skips the prompt; `RX_START_TZ=utc` for UTC times).
 - Every `start` also **checks the mini's clock through the operator tunnel**
   (HTTPS Date header — no NTP off-grid) and syncs it via sudo when it's ≥ 2 s

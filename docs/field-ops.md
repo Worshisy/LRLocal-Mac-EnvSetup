@@ -45,7 +45,7 @@ ssh ddh-macmini4-0X@192.168.2.1     # long form, works anywhere
 ```sh
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh start      # RTK monitor + USRP RX→SSD, both in tmux
 ```
-Starting **rx** prompts for the **RX center frequency in Hz** (e.g. `5.8e9`;
+Starting **rx** prompts for the **RX center frequency in GHz** (e.g. `2.55`;
 Enter = run.conf default), then an optional **start time** (`HH:MM` local for a
 deferred start; Enter = start now; a past time runs tomorrow).
 Now **close SSH / shut the laptop** — both jobs keep running on the mini.
@@ -122,7 +122,7 @@ sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensh
 ## Notes & gotchas
 - **One env runs everything:** the jobs `conda activate usrp` themselves — you don't need to.
 - **Override autodetect** (multiple serial devices, custom paths, skip the freq prompt):
-  `RTK_PORT=/dev/cu.usbmodemXXXX REPO_BASE=/path RX_FREQ=2.44e9 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh start`
+  `RTK_PORT=/dev/cu.usbmodemXXXX REPO_BASE=/path RX_FREQ=2.55 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh start`
 - **Jobs survive SSH drop** because they're in tmux — that's the whole point; don't run them in a bare SSH shell.
 - **Don't reboot in the field** unless necessary — the AP can come up degraded. The
   mini is set to never-sleep + auto-restart on power loss (see `field-setup.md`).
