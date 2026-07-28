@@ -104,6 +104,29 @@ ask_rx_freq() {
   done
 }
 
+# [c] sync this mini's clock through the operator tunnel — off-grid there is
+# no NTP and a drifted clock breaks --start scheduling. UDP NTP can't ride a
+# SOCKS tunnel, so use an HTTPS Date header (±1 s, plenty). Only sets the
+# clock (sudo) when drift ≥ 2 s. (Yi, 2026-07-28)
+sync_time_via_tunnel() {
+  local hdr remote_epoch drift before
+  hdr="$(curl -sI -m 5 -x socks5h://127.0.0.1:1080 https://www.google.com 2>/dev/null | sed -n 's/^[Dd]ate: //p' | tr -d '\r')"
+  [ -z "$hdr" ] && { warn "time sync skipped — tunnel not up (clock unchecked; off-grid it may drift)"; return 0; }
+  remote_epoch="$(date -j -u -f '%a, %d %b %Y %H:%M:%S GMT' "$hdr" +%s 2>/dev/null)"
+  [ -z "$remote_epoch" ] && { warn "time sync skipped — couldn't parse '$hdr'"; return 0; }
+  drift=$((remote_epoch - $(date +%s)))
+  if [ "$drift" -lt 2 ] && [ "$drift" -gt -2 ]; then
+    ok "clock OK (drift ${drift}s vs internet time, via tunnel)"
+  else
+    before="$(date '+%H:%M:%S')"
+    if sudo date -u -f '%a, %d %b %Y %H:%M:%S GMT' "$hdr" >/dev/null 2>&1; then
+      ok "clock was ${drift}s off — synced via tunnel: $before → $(date '+%H:%M:%S') local"
+    else
+      warn "clock is ${drift}s off but couldn't set it (sudo date failed) — fix manually"
+    fi
+  fi
+}
+
 # [c] after the freq prompt, ask an optional deferred start (run.sh --start).
 # Enter = start now. HH:MM local; a past time = tomorrow (confirmed here, and
 # run.sh auto-defers non-interactively since its stdin is /dev/null in tmux).
@@ -115,7 +138,7 @@ ask_rx_start() {
   if [ ! -t 0 ]; then RX_START_HHMM="$t"; return 0; fi
   while :; do
     if [ -z "$t" ]; then
-      printf '  RX start time HH:MM local [Enter = start now]: '
+      printf '  RX start time HH:MM local [Enter = start now]  (machine time now: %s): ' "$(date '+%H:%M')"
       read -r t
       [ -z "$t" ] && { RX_START_HHMM=""; return 0; }
     fi
@@ -166,6 +189,7 @@ case "$CMD" in
   start)
     need_tmux; need_conda
     say "Starting field jobs in tmux (survive SSH disconnect)"
+    sync_time_via_tunnel        # [c] clock sanity before any timed start
     if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; fi
     say "Reconnect later, then:  ./field-000-jobs.sh attach rx   (or rtk) ·  ./field-000-jobs.sh logs rx" ;;
   attach)

@@ -92,8 +92,13 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
   run.conf `FREQ`, shown in the prompt), then an optional **start time** —
   Enter = start now, or `HH:MM` local for a deferred start (`run.sh --start`;
   a time already past today schedules for tomorrow, confirmed at the prompt).
+  The prompt shows the machine's current time.
   Pre-answer with `RX_FREQ=2.44e9 RX_START=18:30 … field-000-jobs.sh start`
   (`RX_START=now` skips the prompt; `RX_START_TZ=utc` for UTC times).
+- Every `start` also **checks the mini's clock through the operator tunnel**
+  (HTTPS Date header — no NTP off-grid) and syncs it via sudo when it's ≥ 2 s
+  off, so deferred starts fire at the right wall-clock time. Tunnel down →
+  warns and continues with the clock unchecked.
 - Each job also tees to `~/field-logs/{rtk,rx}.log`, so output persists even if you
   never attach. `run.sh` respects the already-active `usrp` conda env (won't switch
   to base). Needs `tmux` (in the `usrp` env via step 020, or `conda install -n usrp tmux`).
