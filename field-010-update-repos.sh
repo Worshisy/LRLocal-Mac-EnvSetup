@@ -88,6 +88,10 @@ update_one() {  # $1 = repo dir
 # self-pull at the end can't corrupt this script mid-execution.
 main() {
   say "Updating repos (ff-only)"
+  # [c] show capture-SSD free space — a full disk breaks pulls mid-checkout
+  for _v in /Volumes/USRP*; do
+    [ -d "$_v" ] && df -h "$_v" | awk -v v="$_v" 'NR==2{printf "  ⛁ %s: %s free of %s (%s used)\n", v, $4, $2, $5}'
+  done
   pick_route
   local r dir nfail=0
   for r in "${REPOS[@]}"; do

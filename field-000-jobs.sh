@@ -29,6 +29,13 @@ say()  { printf '\n\033[1;36m[field] %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m!\033[0m %s\n' "$*"; }
 
+# [c] always show remaining space on the capture SSD(s) at every run — a full
+# disk kills the rx writer AND git pulls (Yi, 2026-07-28)
+for _v in /Volumes/USRP*; do
+  [ -d "$_v" ] || continue
+  df -h "$_v" | awk -v v="$_v" 'NR==2{printf "  \033[1;35m⛁ %s: %s free\033[0m of %s (%s used)\n", v, $4, $2, $5}'
+done
+
 # ── conda + tmux (resolved lazily; only some commands need them) ──────────────
 CONDA_SH=""
 for d in "$HOME/miniconda3" "$HOME/miniforge3" "$HOME/anaconda3"; do
