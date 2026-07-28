@@ -52,19 +52,35 @@ desc_for() {
 printf '\n\033[1;35m== Mac-mini environment setup ==\033[0m\n'
 printf 'Target: Apple-Silicon macOS. Steps to run: %s\n' "${STEPS[*]}"
 
+# [c] a failed step is recorded and the run CONTINUES (steps are independent
+# and idempotent); the summary at the end shows ✓/✗/− per step (Yi, 2026-07-28)
+RESULTS=()
+NFAIL=0
 for s in "${STEPS[@]}"; do
   scr="$(script_for "$s")"
-  [ -z "$scr" ] && { printf '\033[1;33mUnknown step "%s" — skipping.\033[0m\n' "$s"; continue; }
+  [ -z "$scr" ] && { printf '\033[1;33mUnknown step "%s" — skipping.\033[0m\n' "$s"; RESULTS+=("? $s  (unknown step)"); continue; }
   printf '\n\033[1;35m──────── Step %s: %s ────────\033[0m\n' "$s" "$(desc_for "$s")"
   if [ "$AUTO" -ne 1 ]; then
     read -r -p "Run step $s? [Y/n/q] " ans
     case "$ans" in
-      [Nn]*) echo "skipped."; continue ;;
-      [Qq]*) echo "quit."; exit 0 ;;
+      [Nn]*) echo "skipped."; RESULTS+=("− $s  $scr  (skipped by you)"); continue ;;
+      [Qq]*) echo "quit."; RESULTS+=("− $s  $scr  (quit here — later steps not run)"); break ;;
     esac
   fi
-  bash "$HERE/$scr" || { printf '\033[1;31mStep %s failed. Fix and re-run: ./%s\033[0m\n' "$s" "$scr"; exit 1; }
+  if bash "$HERE/$scr"; then
+    RESULTS+=("✓ $s  $scr")
+  else
+    RESULTS+=("✗ $s  $scr  ← FAILED (fix, then re-run alone: ./$scr)")
+    NFAIL=$((NFAIL+1))
+    printf '\033[1;31mStep %s failed — continuing with the remaining steps.\033[0m\n' "$s"
+  fi
 done
 
-printf '\n\033[1;32m== All requested steps complete. ==\033[0m\n'
+printf '\n\033[1;35m== Summary ==\033[0m\n'
+[ ${#RESULTS[@]} -gt 0 ] && for r in "${RESULTS[@]}"; do printf '  %s\n' "$r"; done
+if [ "$NFAIL" -gt 0 ]; then
+  printf '\n\033[1;31m%d step(s) FAILED — see ✗ above.\033[0m\n' "$NFAIL"
+  exit 1
+fi
+printf '\n\033[1;32mAll requested steps done.\033[0m '
 printf 'See README.md for per-repo run instructions and the MATLAB/Vivado manual prereqs.\n'
