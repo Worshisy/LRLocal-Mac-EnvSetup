@@ -1,2 +1,3 @@
 step*.log
 *.log
+.DS_Store

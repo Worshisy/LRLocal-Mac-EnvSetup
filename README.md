@@ -31,10 +31,10 @@ Day-to-day scripts (see [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)):
 
 | Script | Runs on | Covers |
 |---|---|---|
-| `field-010-jobs.sh` | mini | RTK monitor + USRP RX→SSD in detached tmux (start/attach/logs/status/stop) |
-| `field-011-empty-rx-data.sh` | mini | wipe the RX captures — 3 typed confirmations |
-| `field-020-update-repos.sh` | mini | git pull LRLocal-V2 + USRP + RTK repos + this kit through the operator tunnel (FT232 excluded) |
-| `host-010-ssh-config.sh` | laptop | `ssh ddh-mac-0X` shortcuts + reverse SOCKS forward + host-key quieting |
+| `field-000-jobs.sh` | mini | RTK monitor + USRP RX→SSD in detached tmux (start/attach/logs/status/stop) |
+| `field-001-empty-rx-data.sh` | mini | wipe the RX captures — 3 typed confirmations |
+| `field-010-update-repos.sh` | mini | git pull LRLocal-V2 + USRP + RTK repos + this kit through the operator tunnel (FT232 excluded) |
+| `host-000-ssh-config.sh` | laptop | `ssh ddh-mac-0X` shortcuts + reverse SOCKS forward + host-key quieting |
 
 ### Environment design — ONE conda env for everything
 - **A single Miniconda env (`usrp`) runs all the tools** — no per-tool venvs.
@@ -132,7 +132,7 @@ one manual GUI step** (see below).
   > (e.g. a Claude Code tab). The Sharing toggle needs neither FDA nor a restart.
 - **SSH in:** `ssh <user>@<ip>`. Add collaborators' public keys to
   `~/.ssh/authorized_keys` (one per line). The script prints user / host / LAN IP.
-- **Field-fleet shortcuts + offline-mini internet:** run `host-010-ssh-config.sh`
+- **Field-fleet shortcuts + offline-mini internet:** run `host-000-ssh-config.sh`
   once on the operator laptop → `ssh ddh-mac-0X` shortcuts with a reverse SOCKS
   forward, so the mini can `gitp pull` through the laptop's internet
   (FIELD-RUNBOOK §4; helpers installed on the mini by step 040).

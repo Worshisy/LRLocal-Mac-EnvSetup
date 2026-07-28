@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# host-010-ssh-config.sh — set up the OPERATOR machine (your laptop / lab Mac) to
+# host-000-ssh-config.sh — set up the OPERATOR machine (your laptop / lab Mac) to
 # reach the field minis with short names. RUN THIS ON THE HOST, not on a mini.
 #
 #   ssh ddh-mac-03      →  ddh-macmini4-03@192.168.2.1 (unit 03's AP), plus:
@@ -18,10 +18,10 @@ say()  { printf '\n\033[1;36m[host-ssh] %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
 
 CFG="$HOME/.ssh/config"
-MARK_BEGIN='# >>> LRLocal field minis (managed by LRLocal-Mac-EnvSetup/host-010-ssh-config.sh) >>>'
-# [c] pre-rename marker (was host-ssh-config.sh) — still stripped so operator
-# machines configured before 2026-07-28 don't get a duplicate block
-MARK_BEGIN_OLD='# >>> LRLocal field minis (managed by LRLocal-Mac-EnvSetup/host-ssh-config.sh) >>>'
+MARK_BEGIN='# >>> LRLocal field minis (managed by LRLocal-Mac-EnvSetup/host-000-ssh-config.sh) >>>'
+# [c] strip by the STABLE prefix, so blocks written under any older script name
+# (host-ssh-config.sh, host-010-…) are replaced, never duplicated
+MARK_PREFIX='# >>> LRLocal field minis'
 MARK_END='# <<< LRLocal field minis <<<'
 
 say "Installing ddh-mac-0X shortcuts into $CFG"
@@ -30,8 +30,8 @@ touch "$CFG"
 
 # drop any previous managed block (portable awk — BSD/GNU sed -i differ)
 TMP="$(mktemp)"
-awk -v b="$MARK_BEGIN" -v b2="$MARK_BEGIN_OLD" -v e="$MARK_END" \
-    'index($0,b)==1||index($0,b2)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$CFG" > "$TMP"
+awk -v b="$MARK_PREFIX" -v e="$MARK_END" \
+    'index($0,b)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$CFG" > "$TMP"
 mv "$TMP" "$CFG"
 
 cat >> "$CFG" <<EOF

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# field-020-update-repos.sh — git pull this kit + the project repos on this Mac
+# field-010-update-repos.sh — git pull this kit + the project repos on this Mac
 # (mini). (FT232_SCAN_IO is deliberately NOT in the list — it doesn't need
 # updating on the minis; it's still cloned once by setup-030-clone-repos.sh.)
 #
@@ -10,10 +10,10 @@
 # merged or rebased — it's reported and left for you to resolve.
 #
 # Usage (on the mini, inside an operator SSH session):
-#   ./field-020-update-repos.sh                     # update all (kit pulls itself last)
-#   REPO_BASE=/path ./field-020-update-repos.sh     # override repo autodetect
-#   WITH_SUBMODULES=1 ./field-020-update-repos.sh   # also update USRP uhd+gnuradio submodules (GBs)
-#   PROXY=socks5h://127.0.0.1:1081 ./field-020-update-repos.sh   # different tunnel port
+#   ./field-010-update-repos.sh                     # update all (kit pulls itself last)
+#   REPO_BASE=/path ./field-010-update-repos.sh     # override repo autodetect
+#   WITH_SUBMODULES=1 ./field-010-update-repos.sh   # also update USRP uhd+gnuradio submodules (GBs)
+#   PROXY=socks5h://127.0.0.1:1081 ./field-010-update-repos.sh   # different tunnel port
 set -u
 
 say()  { printf '\n\033[1;36m[update] %s\033[0m\n' "$*"; }

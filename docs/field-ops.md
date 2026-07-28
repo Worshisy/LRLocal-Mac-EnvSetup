@@ -20,7 +20,7 @@
 | Field AP (Wi-Fi) | SSID **`macmini-field-0X`** · pw **`eecs2435`** · ch 40 (5 GHz, 2.4 fallback) |
 | Mac mini IP | **`192.168.2.1`** (on whichever unit's AP you're joined to) |
 | SSH user | **`ddh-macmini4-0X`** (X = unit #, 01–06) |
-| SSH shortcut | **`ssh ddh-mac-0X`** — after running `host-010-ssh-config.sh` once on your laptop |
+| SSH shortcut | **`ssh ddh-mac-0X`** — after running `host-000-ssh-config.sh` once on your laptop |
 | Kit path on mini | `~/LRLocal-Mac-EnvSetup` |
 | RTK dashboard | `http://192.168.2.1:8000` |
 | Capture logs on mini | `~/field-logs/{rtk,rx}.log` |
@@ -29,13 +29,13 @@
 
 ## 1. Connect
 
-One-time on your laptop: run the kit's `host-010-ssh-config.sh` — it installs
+One-time on your laptop: run the kit's `host-000-ssh-config.sh` — it installs
 `ssh ddh-mac-0X` shortcuts (user + IP + the reverse-SOCKS forward + host-key
 quieting) into your `~/.ssh/config`.
 
 Join the **`macmini-field-0X`** Wi-Fi on your laptop, then:
 ```sh
-ssh ddh-mac-0X                      # short form (after host-010-ssh-config.sh)
+ssh ddh-mac-0X                      # short form (after host-000-ssh-config.sh)
 ssh ddh-macmini4-0X@192.168.2.1     # long form, works anywhere
 ```
 (If it says *"Connection closed"* you used the wrong username — it's
@@ -43,24 +43,24 @@ ssh ddh-macmini4-0X@192.168.2.1     # long form, works anywhere
 
 ## 2. Start the field jobs (then you can disconnect)
 ```sh
-~/LRLocal-Mac-EnvSetup/field-010-jobs.sh start      # RTK monitor + USRP RX→SSD, both in tmux
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh start      # RTK monitor + USRP RX→SSD, both in tmux
 ```
 Starting **rx** prompts for the **RX center frequency in Hz** — type e.g. `5.8e9`,
 or press Enter to keep the run.conf default shown in the prompt.
 Now **close SSH / shut the laptop** — both jobs keep running on the mini.
 
-Start just one if you want: `field-010-jobs.sh start rtk`  or  `field-010-jobs.sh start rx`.
+Start just one if you want: `field-000-jobs.sh start rtk`  or  `field-000-jobs.sh start rx`.
 
 ## 3. Reconnect later and watch live output
 ```sh
 ssh ddh-macmini4-0X@192.168.2.1
-~/LRLocal-Mac-EnvSetup/field-010-jobs.sh attach rx   # live view of the RX capture
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh attach rx   # live view of the RX capture
 #   detach (leave it running):  Ctrl-b  then  d
-~/LRLocal-Mac-EnvSetup/field-010-jobs.sh attach rtk  # live view of the RTK monitor
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh attach rtk  # live view of the RTK monitor
 ```
 Prefer a plain scrolling log instead of the tmux view:
 ```sh
-~/LRLocal-Mac-EnvSetup/field-010-jobs.sh logs rx     # tail -f ~/field-logs/rx.log  (Ctrl-c to stop tailing)
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh logs rx     # tail -f ~/field-logs/rx.log  (Ctrl-c to stop tailing)
 ```
 
 ## 4. RTK dashboard in a browser (from the laptop)
@@ -71,8 +71,8 @@ http://192.168.2.1:8000
 
 ## 5. Status / stop
 ```sh
-~/LRLocal-Mac-EnvSetup/field-010-jobs.sh status      # what's running + log sizes
-~/LRLocal-Mac-EnvSetup/field-010-jobs.sh stop        # stop both (or: stop rx / stop rtk)
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh status      # what's running + log sizes
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh stop        # stop both (or: stop rx / stop rtk)
 ```
 
 ## 6. Pull captures back to the laptop (end of day)
@@ -86,7 +86,7 @@ rsync -avzP ddh-mac-0X:rx-data/  ~/field-data/
 Capture SSD full (rx job dead, git pulls failing with "No space left")? After
 offloading, wipe the captures on the mini — takes **3 typed confirmations**:
 ```sh
-~/LRLocal-Mac-EnvSetup/field-011-empty-rx-data.sh
+~/LRLocal-Mac-EnvSetup/field-001-empty-rx-data.sh
 ```
 
 ## 6b. Give the mini internet through your laptop (git pull, installs)
@@ -99,7 +99,7 @@ SOCKS proxy** (`RemoteForward 1080`): traffic the mini sends to
 gitp -C ~/LRLocal-Mac-EnvSetup pull   # gitp = git through the proxy (alias from step 040)
 proxyon                               # or: proxy everything in this shell (curl/brew/pip…)
 proxyoff
-~/LRLocal-Mac-EnvSetup/field-020-update-repos.sh   # or: update ALL repos + the kit in one go (ff-only)
+~/LRLocal-Mac-EnvSetup/field-010-update-repos.sh   # or: update ALL repos + the kit in one go (ff-only)
 ```
 
 Connected without the shortcut? `ssh -R 1080 ddh-macmini4-0X@192.168.2.1`
@@ -121,14 +121,14 @@ sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensh
 ## Notes & gotchas
 - **One env runs everything:** the jobs `conda activate usrp` themselves — you don't need to.
 - **Override autodetect** (multiple serial devices, custom paths, skip the freq prompt):
-  `RTK_PORT=/dev/cu.usbmodemXXXX REPO_BASE=/path RX_FREQ=2.44e9 ~/LRLocal-Mac-EnvSetup/field-010-jobs.sh start`
+  `RTK_PORT=/dev/cu.usbmodemXXXX REPO_BASE=/path RX_FREQ=2.44e9 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh start`
 - **Jobs survive SSH drop** because they're in tmux — that's the whole point; don't run them in a bare SSH shell.
 - **Don't reboot in the field** unless necessary — the AP can come up degraded. The
   mini is set to never-sleep + auto-restart on power loss (see `field-setup.md`).
 - **Wrong-username symptom:** `Connection closed by 192.168.2.1 port 22` → use `ddh-macmini4-0X`.
 - **"REMOTE HOST IDENTIFICATION HAS CHANGED" / host key warning:** expected in the
   fleet — every mini reuses `192.168.2.1` but has its own SSH host key.
-  `host-010-ssh-config.sh` already quiets this (Macs). One-off fix, or on Windows:
+  `host-000-ssh-config.sh` already quiets this (Macs). One-off fix, or on Windows:
   clear the stale entry with `ssh-keygen -R 192.168.2.1`, or add to
   `C:\Users\<you>\.ssh\config`:
   ```

@@ -22,7 +22,7 @@
 Four target repos (auto-cloned):
 | Repo | Needs |
 |---|---|
-| `FT232_SCAN_IO` | `usrp` conda env (pyftdi + libusb) — *cloned once; excluded from `field-020-update-repos.sh`* |
+| `FT232_SCAN_IO` | `usrp` conda env (pyftdi + libusb) — *cloned once; excluded from `field-010-update-repos.sh`* |
 | `LRLocal-V2` | MATLAB + toolboxes (§6), **and** a Python branch (`usrp` conda env) |
 | `USRP_study_yishen` | `usrp` conda env (UHD 4.9 + GNU Radio/GRC + build tools) |
 | `RTK_dev_for_cm-loc` | `usrp` conda env (pyserial) |
@@ -320,8 +320,8 @@ cd ~/Projects/LRLocal-V2/03-tag-template-gen-code && jupyter notebook
 ## 8. Operate it remotely / in the field → [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)
 
 Connecting in (SSH/VNC), rsync file sync, the detached field jobs
-(`field-010-jobs.sh`), and the `ddh-mac-0X` SSH shortcuts + offline-mini internet
-(`host-010-ssh-config.sh`) moved to **[FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)**.
+(`field-000-jobs.sh`), and the `ddh-mac-0X` SSH shortcuts + offline-mini internet
+(`host-000-ssh-config.sh`) moved to **[FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)**.
 
 ---
 

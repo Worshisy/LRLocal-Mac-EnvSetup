@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# field-011-empty-rx-data.sh — DELETE all RX capture data on this Mac (mini), after
+# field-001-empty-rx-data.sh — DELETE all RX capture data on this Mac (mini), after
 # THREE typed confirmations. Interactive only; nothing is removed until all
 # three pass, and any wrong answer aborts immediately.
 #
@@ -19,7 +19,7 @@ abort(){ warn "$*"; warn "Nothing was deleted."; exit 1; }
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# [c] like field-010-jobs.sh find_dir, plus /Volumes/USRP* (repos live on the
+# [c] like field-000-jobs.sh find_dir, plus /Volumes/USRP* (repos live on the
 # capture SSD on some minis, e.g. /Volumes/USRP02/USRP_study_yishen)
 find_repo() {
   for b in "${REPO_BASE:-}" "$(cd "$HERE/.." && pwd)" /Volumes/USRP* "$HOME/Projects" "$HOME"; do
@@ -48,7 +48,7 @@ fi
 TMUX_BIN="$(command -v tmux || true)"
 [ -z "$TMUX_BIN" ] && [ -x "$HOME/miniconda3/envs/usrp/bin/tmux" ] && TMUX_BIN="$HOME/miniconda3/envs/usrp/bin/tmux"
 if [ -n "$TMUX_BIN" ] && "$TMUX_BIN" has-session -t rx 2>/dev/null; then
-  abort "the rx capture job is RUNNING — stop it first:  $HERE/field-010-jobs.sh stop rx"
+  abort "the rx capture job is RUNNING — stop it first:  $HERE/field-000-jobs.sh stop rx"
 fi
 
 # ── show exactly what would be deleted ───────────────────────────────────────

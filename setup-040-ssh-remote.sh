@@ -54,20 +54,19 @@ printf '    echo "ssh-ed25519 AAAA... them@host" >> ~/.ssh/authorized_keys\n'
 warn "Password SSH login also works for any local account (keys are just safer)."
 
 # ── 3b. Reverse-SOCKS proxy helpers (offline field mini → operator's internet) ─
-# [c] When the operator connects with `ssh ddh-mac-0X` (host-010-ssh-config.sh sets
+# [c] When the operator connects with `ssh ddh-mac-0X` (host-000-ssh-config.sh sets
 # RemoteForward 1080) or a manual `ssh -R 1080 …`, sshd opens a SOCKS proxy at
 # localhost:1080 whose traffic exits via the OPERATOR's machine. These zshrc
 # helpers let this (otherwise offline) mini use it:  gitp pull · proxyon/proxyoff
 say "Installing proxy helpers (gitp / proxyon) into ~/.zshrc"
 ZRC="$HOME/.zshrc"; touch "$ZRC"
-PXY_BEGIN='# >>> LRLocal field proxy helpers (managed by LRLocal-Mac-EnvSetup/setup-040-ssh-remote.sh) >>>'
-# [c] pre-rename marker (was 40-ssh-remote.sh) — still stripped so machines
-# set up before 2026-07-28 don't get a duplicate block
-PXY_BEGIN_OLD='# >>> LRLocal field proxy helpers (managed by LRLocal-Mac-EnvSetup/40-ssh-remote.sh) >>>'
+# [c] strip by the STABLE prefix, so blocks written under any older script
+# name (40-ssh-remote.sh, …) are replaced, never duplicated
+PXY_PREFIX='# >>> LRLocal field proxy helpers'
 PXY_END='# <<< LRLocal field proxy helpers <<<'
 TMP="$(mktemp)"
-awk -v b="$PXY_BEGIN" -v b2="$PXY_BEGIN_OLD" -v e="$PXY_END" \
-    'index($0,b)==1||index($0,b2)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$ZRC" > "$TMP"
+awk -v b="$PXY_PREFIX" -v e="$PXY_END" \
+    'index($0,b)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$ZRC" > "$TMP"
 mv "$TMP" "$ZRC"
 cat >> "$ZRC" <<'EOF'
 # >>> LRLocal field proxy helpers (managed by LRLocal-Mac-EnvSetup/setup-040-ssh-remote.sh) >>>
