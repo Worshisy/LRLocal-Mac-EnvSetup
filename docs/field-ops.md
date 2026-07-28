@@ -92,6 +92,7 @@ SOCKS proxy** (`RemoteForward 1080`): traffic the mini sends to
 gitp -C ~/LRLocal-Mac-EnvSetup pull   # gitp = git through the proxy (alias from step 40)
 proxyon                               # or: proxy everything in this shell (curl/brew/pip…)
 proxyoff
+~/LRLocal-Mac-EnvSetup/update-repos.sh   # or: update ALL repos + the kit in one go (ff-only)
 ```
 
 Connected without the shortcut? `ssh -R 1080 ddh-macmini4-0X@192.168.2.1`

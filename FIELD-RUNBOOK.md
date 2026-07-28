@@ -1,6 +1,6 @@
 # FIELD RUNBOOK — operate an already-set-up Mac mini remotely / in the field
 
-> **Review status:** ⏳ Unreviewed *(default; update when Yi reviews)*
+> **Review status:** ✅ Fully confirmed *(Yi, 2026-07-28)*
 >
 > ✍️ *Claude-authored.* Split out of the original `RUNBOOK.md` (2026-07-28):
 > everything about **connecting to and operating** a mini that's already been
@@ -118,6 +118,14 @@ machine**. On the mini (helpers installed by step 40 into `~/.zshrc`):
 gitp pull        # git through the proxy (per-invocation; nothing persists)
 proxyon          # proxy this whole shell: curl / brew / git … (proxyoff to undo)
 ```
+
+To update **everything at once** (the 4 project repos + this kit, all ff-only
+through the tunnel):
+```sh
+~/LRLocal-Mac-EnvSetup/update-repos.sh
+```
+Repos with local commits/changes are never merged — they're reported for you
+to resolve. `WITH_SUBMODULES=1` also updates USRP's uhd+gnuradio source (GBs).
 It also quiets the fleet host-key warning for `192.168.2.1`. The block is
 idempotent (managed markers in `~/.ssh/config`); the rest of your config is
 untouched. Without the shortcut, `ssh -R 1080 ddh-macmini4-0X@192.168.2.1`
