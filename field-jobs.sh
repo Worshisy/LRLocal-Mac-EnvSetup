@@ -19,6 +19,7 @@
 #   ./field-jobs.sh status             # what's running
 #   ./field-jobs.sh stop  [rtk|rx]     # stop both, or one
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
+#                        RX_FREQ=2.44e9   (pre-answers the RX center-freq prompt)
 set -u
 
 CMD="${1:-help}"; TARGET="${2:-}"
@@ -74,6 +75,27 @@ disable_spotlight_capture() {
   [ "$found" = 1 ] || warn "no capture SSD mounted (/Volumes/USRP* or \$CAPTURE_VOL) — skipping Spotlight step"
 }
 
+# [c] Always ask the RX center frequency at each rx start (Yi, 2026-07-28).
+# Enter keeps the run.conf FREQ; RX_FREQ=… pre-answers (also the no-tty path).
+# Result in RX_FREQ_HZ (global — the caller runs under $(), so no echo/capture).
+RX_FREQ_HZ=""
+ask_rx_freq() {
+  local conf_freq; conf_freq="$(sed -n 's/^FREQ=\([^ ]*\).*/\1/p' "$RX_DIR/run.conf" 2>/dev/null | head -1)"
+  RX_FREQ_HZ="${RX_FREQ:-}"
+  if [ -z "$RX_FREQ_HZ" ] && [ ! -t 0 ]; then
+    warn "no tty to ask RX center freq — using run.conf FREQ=${conf_freq:-?} (set RX_FREQ to choose)"
+    RX_FREQ_HZ="$conf_freq"; return 0
+  fi
+  while [ -z "$RX_FREQ_HZ" ]; do
+    printf '  RX center frequency in Hz [%s]: ' "${conf_freq:-run.conf default}"
+    read -r RX_FREQ_HZ
+    [ -z "$RX_FREQ_HZ" ] && RX_FREQ_HZ="$conf_freq"
+    case "$RX_FREQ_HZ" in
+      ''|*[!0-9.eE+-]*) warn "'$RX_FREQ_HZ' doesn't look like a frequency in Hz (e.g. 2.44e9)"; RX_FREQ_HZ="" ;;
+    esac
+  done
+}
+
 start_one() {
   case "$1" in
     rtk)
@@ -89,9 +111,12 @@ start_one() {
       [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
       "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-jobs.sh attach rx)"; return 0; }
       disable_spotlight_capture   # so run.sh doesn't block on the Spotlight prompt / overflow
+      ask_rx_freq                 # [c] confirm center freq every start; --freq overrides run.conf
+      local freq_args=""
+      [ -n "$RX_FREQ_HZ" ] && freq_args=" --freq $RX_FREQ_HZ"
       # run.sh respects the active conda env; FORCE_RUN=1 is a non-tty fallback.
-      "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "FORCE_RUN=1 ./run.sh" "$LOGDIR/rx.log")"
-      ok "rx started → 01-rx-to-ssd-b200-agc/run.sh  (log: $LOGDIR/rx.log)" ;;
+      "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "FORCE_RUN=1 ./run.sh$freq_args" "$LOGDIR/rx.log")"
+      ok "rx started (freq ${RX_FREQ_HZ:-run.conf default} Hz) → 01-rx-to-ssd-b200-agc/run.sh  (log: $LOGDIR/rx.log)" ;;
     *) warn "unknown job '$1' (use rtk or rx)"; return 1 ;;
   esac
 }
