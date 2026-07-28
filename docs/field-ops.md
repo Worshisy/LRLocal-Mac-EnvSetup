@@ -129,4 +129,6 @@ sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensh
       UserKnownHostsFile NUL            # macOS/Linux: /dev/null
   ```
 - Full one-time field build (FileVault off, auto-login, AP, reboot tests): see
-  [`field-setup.md`](field-setup.md). Operator commands for the jobs: this file.
+  [`field-setup.md`](field-setup.md). Long-form operating reference (rsync,
+  shortcuts, offline-mini internet): [`../FIELD-RUNBOOK.md`](../FIELD-RUNBOOK.md).
+  Operator commands for the jobs: this file.

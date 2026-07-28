@@ -33,7 +33,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
   **NOT supported on this Apple-Silicon Mac** and was removed from the flow — the
   82357B has no working macOS driver (NI's GPIB kexts are x86_64-only, and NI-VISA
   dropped GPIB). Use an Intel Mac, or move to a Prologix/RS-232 (serial) path.
-  See RUNBOOK "source meter" note.
+  See SETUP-RUNBOOK "source meter" note.
 - **UHD pinned to 4.9.x** in the env to match the version the USRP host apps
   were verified against (run-steps record UHD 4.9.0.0). The installer
   auto-falls-back to unpinned UHD if conda-forge can't solve the pin here.
@@ -42,8 +42,10 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 > the `usrp` env resolved **UHD 4.9.0.0 + GNU Radio 3.10.12 + gr-uhd**, a USRP
 > C++ host app (`rx_to_ssd_b200`) built & ran, and the attached **FT232H was
 > detected** via the pip libusb backend. Steps 00 (Homebrew) and 40 (remote
-> access) need sudo — run those interactively. **See [RUNBOOK.md](RUNBOOK.md)
-> for the full step-by-step (incl. MATLAB install + cloning the 4 repos).**
+> access) need sudo — run those interactively. **See
+> [SETUP-RUNBOOK.md](SETUP-RUNBOOK.md) for the full step-by-step (incl. MATLAB
+> install + cloning the 4 repos), and [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md) for
+> operating a set-up mini remotely / in the field.**
 
 ## Run it
 
@@ -115,7 +117,7 @@ one manual GUI step** (see below).
 - **Field-fleet shortcuts + offline-mini internet:** run `host-ssh-config.sh`
   once on the operator laptop → `ssh ddh-mac-0X` shortcuts with a reverse SOCKS
   forward, so the mini can `gitp pull` through the laptop's internet
-  (RUNBOOK §8d; helpers installed on the mini by step 40).
+  (FIELD-RUNBOOK §4; helpers installed on the mini by step 40).
 - **Screen Sharing (GUI):** connect to `vnc://<ip>` (Finder ▸ Go ▸ Connect to
   Server, or the Screen Sharing app). Needed for GRC, Jupyter, MATLAB GUIs.
   If the script's `launchctl` path is refused, enable **Screen Sharing** in the

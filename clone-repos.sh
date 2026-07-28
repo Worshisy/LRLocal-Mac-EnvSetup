@@ -3,7 +3,7 @@
 #
 # Self-contained GitHub auth: installs `gh` if missing, runs `gh auth login`
 # (interactive — browser or token) if not logged in, and wires plain `git` to the
-# token via a file credential store (works over SSH; see RUNBOOK.md §3). Then clones.
+# token via a file credential store (works over SSH; see SETUP-RUNBOOK.md §3). Then clones.
 #
 # Usage:
 #   ./clone-repos.sh                 # clone into the PARENT dir of this kit (../)
