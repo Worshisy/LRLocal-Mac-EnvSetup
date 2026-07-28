@@ -53,6 +53,31 @@ warn "Add each collaborator's PUBLIC key (one per line) to ~/.ssh/authorized_key
 printf '    echo "ssh-ed25519 AAAA... them@host" >> ~/.ssh/authorized_keys\n'
 warn "Password SSH login also works for any local account (keys are just safer)."
 
+# ── 3b. Reverse-SOCKS proxy helpers (offline field mini → operator's internet) ─
+# [c] When the operator connects with `ssh ddh-mac-0X` (host-ssh-config.sh sets
+# RemoteForward 1080) or a manual `ssh -R 1080 …`, sshd opens a SOCKS proxy at
+# localhost:1080 whose traffic exits via the OPERATOR's machine. These zshrc
+# helpers let this (otherwise offline) mini use it:  gitp pull · proxyon/proxyoff
+say "Installing proxy helpers (gitp / proxyon) into ~/.zshrc"
+ZRC="$HOME/.zshrc"; touch "$ZRC"
+PXY_BEGIN='# >>> LRLocal field proxy helpers (managed by LRLocal-Mac-EnvSetup/40-ssh-remote.sh) >>>'
+PXY_END='# <<< LRLocal field proxy helpers <<<'
+TMP="$(mktemp)"
+awk -v b="$PXY_BEGIN" -v e="$PXY_END" \
+    'index($0,b)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$ZRC" > "$TMP"
+mv "$TMP" "$ZRC"
+cat >> "$ZRC" <<'EOF'
+# >>> LRLocal field proxy helpers (managed by LRLocal-Mac-EnvSetup/40-ssh-remote.sh) >>>
+# Works when the operator SSH'd in with `ssh ddh-mac-0X` (RemoteForward 1080)
+# or `ssh -R 1080 …` — reverse SOCKS at localhost:1080, exits via their internet.
+# socks5h (not socks5): DNS also resolves through the operator's machine.
+alias gitp='git -c http.proxy=socks5h://127.0.0.1:1080'   # gitp pull / gitp fetch …
+proxyon()  { local p=socks5h://127.0.0.1:1080; export ALL_PROXY="$p" HTTP_PROXY="$p" HTTPS_PROXY="$p" http_proxy="$p" https_proxy="$p"; echo "proxy ON → operator's internet ($p)"; }
+proxyoff() { unset ALL_PROXY HTTP_PROXY HTTPS_PROXY http_proxy https_proxy; echo "proxy OFF"; }
+# <<< LRLocal field proxy helpers <<<
+EOF
+ok "gitp / proxyon / proxyoff in ~/.zshrc (new shells; or:  source ~/.zshrc)"
+
 # ── 4. How to reach this Mac ──────────────────────────────────────────────────
 say "Connection info — give this to whoever connects"
 USERN="$(whoami)"

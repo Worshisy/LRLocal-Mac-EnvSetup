@@ -112,6 +112,10 @@ one manual GUI step** (see below).
   > (e.g. a Claude Code tab). The Sharing toggle needs neither FDA nor a restart.
 - **SSH in:** `ssh <user>@<ip>`. Add collaborators' public keys to
   `~/.ssh/authorized_keys` (one per line). The script prints user / host / LAN IP.
+- **Field-fleet shortcuts + offline-mini internet:** run `host-ssh-config.sh`
+  once on the operator laptop → `ssh ddh-mac-0X` shortcuts with a reverse SOCKS
+  forward, so the mini can `gitp pull` through the laptop's internet
+  (RUNBOOK §8d; helpers installed on the mini by step 40).
 - **Screen Sharing (GUI):** connect to `vnc://<ip>` (Finder ▸ Go ▸ Connect to
   Server, or the Screen Sharing app). Needed for GRC, Jupyter, MATLAB GUIs.
   If the script's `launchctl` path is refused, enable **Screen Sharing** in the
