@@ -112,6 +112,8 @@ txfreq() {  # txfreq → show; txfreq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 11-
   fi
 }
 alias txstatus='~/USRP_study_yishen/11-tx-beacon-usrpb200-code/deploy/tx-status.sh'
+alias tx_restart='sudo systemctl restart tx-beacon-b200mini.service && sleep 2 && pgrep -af tx_beacon_b200 | grep -o "\-\-freq [^ ]*" | sed "s/^/tx-beacon restarted → /"'
+alias pi_restart='sudo shutdown -r now'   # AP + TX come back on their own (~1 min)
 shortcuts() {
   cat <<'MENU'
 Pi field shortcuts:
@@ -120,6 +122,8 @@ Pi field shortcuts:
   txfreq 2.55   set it to 2.55 GHz (GHz by default; ≥1e6 = Hz) AND restart the
                 tx-beacon service so it's live immediately
   txstatus      TX beacon service status (deploy/tx-status.sh)
+  tx_restart    restart the TX beacon service (re-reads run.conf)
+  pi_restart    reboot the whole Pi (AP + TX auto-return in ~1 min)
   shortcuts     print this list
 MENU
 }

@@ -179,6 +179,8 @@ GIT_SSH_COMMAND='ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p"' \
 | `txfreq` | show the TX center frequency (11-tx `run.conf`) |
 | `txfreq 2.55` | set 2.55 GHz (GHz default, ≥1e6 = Hz, B200-range-checked) **and restart the tx-beacon service so it's live immediately** (asks sudo) |
 | `txstatus` | TX beacon service status (`deploy/tx-status.sh`) |
+| `tx_restart` | restart the TX beacon service (re-reads `run.conf`) |
+| `pi_restart` | reboot the whole Pi — AP + TX auto-return in ~1 min |
 
 The TX service (`tx-beacon-b200mini`, system unit) re-reads `run.conf` at every
 boot — verified 2026-07-31: a bare `FREQ` edit + reboot came up transmitting at
