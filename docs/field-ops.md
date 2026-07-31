@@ -22,6 +22,7 @@
 | SSH user | **`ddh-macmini4-0X`** (X = unit #, 01–06) |
 | SSH shortcut | **`ssh ddh-mac-0X`** — after running `host-000-ssh-config.sh` once on your laptop |
 | Kit path on mini | `~/LRLocal-Mac-EnvSetup` |
+| TX Pi AP | SSID **`ddh-pi4-beacon`** · pw **`eecs2435`** · Pi = **`192.168.3.1`** · `ssh ddh-pi4-beacon` (user `user`) |
 | RTK dashboard | `http://192.168.2.1:8000` |
 | Capture logs on mini | `~/field-logs/{rtk,rx}.log` |
 

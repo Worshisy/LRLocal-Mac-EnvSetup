@@ -11,11 +11,11 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 
 ## What it sets up
 
-> **Script naming:** `<setup|field|host>-XXX-<name>.sh`, where `XXX = 0<step><sub>`
+> **Script naming:** `<setup|field|host|pi>-XXX-<name>.sh`, where `XXX = 0<step><sub>`
 > — sub digit `0` = the step's main script, `1–9` = sub-functions of that step.
 > `setup-*` runs once on a fresh mini, `field-*` is used day-to-day on the mini,
-> `host-*` runs on the operator laptop. *(Renamed 2026-07-28 from the old
-> `00-`/`10-`/`40-`/`70-`/`80-` numbering.)*
+> `host-*` runs on the operator laptop, `pi-*` runs on the TX Raspberry Pi.
+> *(Renamed 2026-07-28 from the old `00-`/`10-`/`40-`/`70-`/`80-` numbering.)*
 
 | Step | Script | Covers |
 |---|---|---|
@@ -34,7 +34,8 @@ Day-to-day scripts (see [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)):
 | `field-000-jobs.sh` | mini | RTK monitor + USRP RX→SSD in detached tmux (start/attach/logs/status/stop) |
 | `field-020-empty-rx-data.sh` | mini | wipe the RX captures — 3 typed confirmations |
 | `field-010-update-repos.sh` | mini | git pull LRLocal-V2 + USRP + RTK repos + this kit through the operator tunnel (FT232 excluded) |
-| `host-000-ssh-config.sh` | laptop | `ssh ddh-mac-0X` shortcuts + reverse SOCKS forward + host-key quieting |
+| `host-000-ssh-config.sh` | laptop | `ssh ddh-mac-0X` / `ssh ddh-pi4-beacon` shortcuts + reverse SOCKS forward + host-key quieting |
+| `pi-000-hotspot.sh` | TX Raspberry Pi | field Wi-Fi AP `ddh-pi4-beacon` @ `192.168.3.1` + SSH — doesn't touch the USRP TX setup |
 
 ### Environment design — ONE conda env for everything
 - **A single Miniconda env (`usrp`) runs all the tools** — no per-tool venvs.

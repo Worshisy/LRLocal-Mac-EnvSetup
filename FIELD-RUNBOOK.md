@@ -141,6 +141,30 @@ ff-only through the tunnel; FT232_SCAN_IO deliberately excluded):
 Repos with local commits/changes are never merged — they're reported for you
 to resolve. `WITH_SUBMODULES=1` also updates USRP's uhd+gnuradio source (GBs).
 
+## 4b. TX Raspberry Pi in the field (`pi-000-hotspot.sh`)
+
+The beacon TX runs on a Raspberry Pi (via `USRP_study_yishen/`
+`11-tx-beacon-usrpb200-code`). To reach it headless in the field it broadcasts
+its own AP, like the minis but on its **own subnet**:
+
+| | |
+|---|---|
+| AP | SSID **`ddh-pi4-beacon`** · pw `eecs2435` · ch 40 (auto-falls back to 2.4 GHz) |
+| Pi address | **`192.168.3.1`** (`.3.1`, not the minis' `.2.1`) |
+| Login | `ssh ddh-pi4-beacon` (= `user@192.168.3.1`; shortcut from `host-000-ssh-config.sh`) |
+
+One-time setup (at home, Pi on Ethernet so you don't cut your own session):
+```sh
+scp pi-000-hotspot.sh user@<pi-lan-ip>:          # from the laptop / this Mac
+ssh user@<pi-lan-ip> ./pi-000-hotspot.sh         # enables sshd + the AP; reboot-safe
+```
+It configures **only `wlan0` + sshd** (NetworkManager AP, `ipv4.method shared`)
+— the USRP TX code, its environment, and eth0 are untouched. Re-run anytime;
+`AP_BAND=bg AP_CHAN=6` forces 2.4 GHz; `sudo nmcli con delete pi-field-ap`
+removes it. The `ssh ddh-pi4-beacon` shortcut carries the same reverse SOCKS
+tunnel, so on the Pi:
+`git -c http.proxy=socks5h://127.0.0.1:1080 pull` works offline too.
+
 ## 5. Empty the RX capture data (3 typed confirmations)
 
 When the capture SSD fills up (a full disk kills the rx job AND git pulls):

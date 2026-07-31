@@ -52,12 +52,19 @@ Host ddh-mac-05
 Host ddh-mac-06
     User ddh-macmini4-06
 
-Host ddh-mac-0* 192.168.2.1
-    HostName 192.168.2.1
+# TX Raspberry Pi (AP ddh-pi4-beacon, own subnet .3.1 — see pi-000-hotspot.sh)
+Host ddh-pi4-beacon
+    HostName 192.168.3.1
+    User user
+
+Host ddh-mac-0* ddh-pi4-beacon 192.168.2.1 192.168.3.1
     RemoteForward 1080
-    # every mini reuses 192.168.2.1 with its own host key — don't warn/abort
+    # every field unit reuses its AP IP with its own host key — don't warn/abort
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
+
+Host ddh-mac-0* 192.168.2.1
+    HostName 192.168.2.1
 $MARK_END
 EOF
 chmod 600 "$CFG"
