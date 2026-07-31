@@ -170,6 +170,20 @@ GIT_SSH_COMMAND='ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p"' \
 ```
 (HTTPS-remote clones would use `git -c http.proxy=socks5h://127.0.0.1:1080 pull`.)
 
+`pi-000-hotspot.sh` also installs **field shortcuts** into the Pi's `~/.bashrc`
+(the menu prints at every login; `shortcuts` reprints it):
+
+| | |
+|---|---|
+| `gitpull` | pull the newest `USRP_study_yishen` — offline OK, rides the tunnel |
+| `txfreq` | show the TX center frequency (11-tx `run.conf`) |
+| `txfreq 2.55` | set 2.55 GHz (GHz default, ≥1e6 = Hz, B200-range-checked) **and restart the tx-beacon service so it's live immediately** (asks sudo) |
+| `txstatus` | TX beacon service status (`deploy/tx-status.sh`) |
+
+The TX service (`tx-beacon-b200mini`, system unit) re-reads `run.conf` at every
+boot — verified 2026-07-31: a bare `FREQ` edit + reboot came up transmitting at
+the new frequency (`act_freq_hz = 2.55e+09` in the run meta).
+
 ## 5. Empty the RX capture data (3 typed confirmations)
 
 When the capture SSD fills up (a full disk kills the rx job AND git pulls):

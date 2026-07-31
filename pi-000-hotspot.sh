@@ -80,6 +80,54 @@ else
     || { warn "AP still failing — check:  nmcli device; journalctl -u NetworkManager -e"; exit 1; }
 fi
 
+# ── 4. Field helper aliases into ~/.bashrc ────────────────────────────────────
+# [c] gitpull / txfreq / shortcuts (Yi, 2026-07-31). Strip by stable prefix →
+# re-runs and renames replace the block, never duplicate it.
+say "Installing field helpers (gitpull / txfreq / shortcuts) into ~/.bashrc"
+BRC="$HOME/.bashrc"; touch "$BRC"
+PIH_PREFIX='# >>> LRLocal field pi helpers'
+PIH_END='# <<< LRLocal field pi helpers <<<'
+TMP="$(mktemp)"
+awk -v b="$PIH_PREFIX" -v e="$PIH_END" \
+    'index($0,b)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$BRC" > "$TMP"
+mv "$TMP" "$BRC"
+cat >> "$BRC" <<'PIBLOCK'
+# >>> LRLocal field pi helpers (managed by LRLocal-Mac-EnvSetup/pi-000-hotspot.sh) >>>
+# Offline-friendly: gitpull rides the operator's reverse SOCKS tunnel that
+# every `ssh ddh-pi4-beacon` carries (see FIELD-RUNBOOK §4b).
+alias gitpull='GIT_SSH_COMMAND="ssh -o ProxyCommand=\"nc -X 5 -x 127.0.0.1:1080 %h %p\"" git -C ~/USRP_study_yishen pull --ff-only'
+txfreq() {  # txfreq → show; txfreq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 11-tx run.conf
+  local conf="$HOME/USRP_study_yishen/11-tx-beacon-usrpb200-code/run.conf" hz
+  [ -f "$conf" ] || { echo "run.conf not found: $conf"; return 1; }
+  if [ $# -eq 0 ]; then grep -n '^FREQ=' "$conf"; echo "(change:  txfreq 2.55   = 2.55 GHz)"; return 0; fi
+  hz=$(awk -v x="$1" 'BEGIN{v=x+0; if (v<1000) v*=1e9; if (v>=70e6 && v<=6e9) printf "%ge9", v/1e9}')
+  [ -n "$hz" ] || { echo "bad frequency '$1' — GHz (e.g. 2.55); B200 range 70 MHz–6 GHz"; return 1; }
+  sed -i "s/^FREQ=.*/FREQ=$hz/" "$conf" && echo "set: $(grep '^FREQ=' "$conf")   ($conf)"
+  # run.conf is read at process start only → restart the TX service (system
+  # unit, deploy/README §3) so the new freq is live immediately
+  if sudo systemctl restart tx-beacon-b200mini.service; then
+    sleep 2; echo "tx-beacon restarted → now: $(pgrep -af tx_beacon | grep -o '\-\-freq [^ ]*' | head -1)"
+  else
+    echo "! restart failed — run:  sudo systemctl restart tx-beacon-b200mini"
+  fi
+}
+alias txstatus='~/USRP_study_yishen/11-tx-beacon-usrpb200-code/deploy/tx-status.sh'
+shortcuts() {
+  cat <<'MENU'
+Pi field shortcuts:
+  gitpull       pull the newest USRP_study_yishen (offline OK — rides the SSH tunnel)
+  txfreq        show the TX center frequency (11-tx run.conf)
+  txfreq 2.55   set it to 2.55 GHz (GHz by default; ≥1e6 = Hz) AND restart the
+                tx-beacon service so it's live immediately
+  txstatus      TX beacon service status (deploy/tx-status.sh)
+  shortcuts     print this list
+MENU
+}
+case $- in *i*) shortcuts ;; esac   # remind at every login
+# <<< LRLocal field pi helpers <<<
+PIBLOCK
+ok "gitpull / txfreq / shortcuts in ~/.bashrc (new shells; or:  source ~/.bashrc)"
+
 say "Done. From the laptop:"
 printf '  join Wi-Fi \033[1m%s\033[0m (pw %s), then:  \033[1mssh ddh-pi4-beacon\033[0m  (= user@%s;\n' "$AP_SSID" "$AP_PASS" "$AP_IP"
 printf '  the shortcut comes from host-000-ssh-config.sh on the laptop)\n'
