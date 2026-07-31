@@ -176,9 +176,9 @@ GIT_SSH_COMMAND='ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p"' \
 | | |
 |---|---|
 | `gitpull` | pull the newest `USRP_study_yishen` — offline OK, rides the tunnel |
-| `txfreq` | show the TX center frequency (11-tx `run.conf`) |
-| `txfreq 2.55` | set 2.55 GHz (GHz default, ≥1e6 = Hz, B200-range-checked) **and restart the tx-beacon service so it's live immediately** (asks sudo) |
-| `txstatus` | TX beacon service status (`deploy/tx-status.sh`) |
+| `tx_freq` | show the TX center frequency (11-tx `run.conf`) |
+| `tx_freq 2.55` | set 2.55 GHz (GHz default, ≥1e6 = Hz, B200-range-checked) **and restart the tx-beacon service so it's live immediately** (asks sudo) |
+| `tx_status` | TX beacon service status (`deploy/tx-status.sh`) |
 | `tx_restart` | restart the TX beacon service (re-reads `run.conf`) |
 | `pi_restart` | reboot the whole Pi — AP + TX auto-return in ~1 min |
 

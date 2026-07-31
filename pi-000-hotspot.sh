@@ -81,9 +81,9 @@ else
 fi
 
 # ── 4. Field helper aliases into ~/.bashrc ────────────────────────────────────
-# [c] gitpull / txfreq / shortcuts (Yi, 2026-07-31). Strip by stable prefix →
+# [c] gitpull / tx_freq / shortcuts (Yi, 2026-07-31). Strip by stable prefix →
 # re-runs and renames replace the block, never duplicate it.
-say "Installing field helpers (gitpull / txfreq / shortcuts) into ~/.bashrc"
+say "Installing field helpers (gitpull / tx_freq / shortcuts) into ~/.bashrc"
 BRC="$HOME/.bashrc"; touch "$BRC"
 PIH_PREFIX='# >>> LRLocal field pi helpers'
 PIH_END='# <<< LRLocal field pi helpers <<<'
@@ -96,10 +96,10 @@ cat >> "$BRC" <<'PIBLOCK'
 # Offline-friendly: gitpull rides the operator's reverse SOCKS tunnel that
 # every `ssh ddh-pi4-beacon` carries (see FIELD-RUNBOOK §4b).
 alias gitpull='GIT_SSH_COMMAND="ssh -o ProxyCommand=\"nc -X 5 -x 127.0.0.1:1080 %h %p\"" git -C ~/USRP_study_yishen pull --ff-only'
-txfreq() {  # txfreq → show; txfreq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 11-tx run.conf
+tx_freq() {  # tx_freq → show; tx_freq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 11-tx run.conf
   local conf="$HOME/USRP_study_yishen/11-tx-beacon-usrpb200-code/run.conf" hz
   [ -f "$conf" ] || { echo "run.conf not found: $conf"; return 1; }
-  if [ $# -eq 0 ]; then grep -n '^FREQ=' "$conf"; echo "(change:  txfreq 2.55   = 2.55 GHz)"; return 0; fi
+  if [ $# -eq 0 ]; then grep -n '^FREQ=' "$conf"; echo "(change:  tx_freq 2.55   = 2.55 GHz)"; return 0; fi
   hz=$(awk -v x="$1" 'BEGIN{v=x+0; if (v<1000) v*=1e9; if (v>=70e6 && v<=6e9) printf "%ge9", v/1e9}')
   [ -n "$hz" ] || { echo "bad frequency '$1' — GHz (e.g. 2.55); B200 range 70 MHz–6 GHz"; return 1; }
   sed -i "s/^FREQ=.*/FREQ=$hz/" "$conf" && echo "set: $(grep '^FREQ=' "$conf")   ($conf)"
@@ -111,23 +111,23 @@ txfreq() {  # txfreq → show; txfreq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 11-
     echo "! restart failed — run:  sudo systemctl restart tx-beacon-b200mini"
   fi
 }
-alias txstatus='~/USRP_study_yishen/11-tx-beacon-usrpb200-code/deploy/tx-status.sh'
+alias tx_status='~/USRP_study_yishen/11-tx-beacon-usrpb200-code/deploy/tx-status.sh'
 alias tx_restart='sudo systemctl restart tx-beacon-b200mini.service && sleep 2 && pgrep -af tx_beacon_b200 | grep -o "\-\-freq [^ ]*" | sed "s/^/tx-beacon restarted → /"'
 alias pi_restart='sudo shutdown -r now'   # AP + TX come back on their own (~1 min)
 case $- in *i*) cat <<'MENU'
 Pi field shortcuts:
-  gitpull       pull the newest USRP_study_yishen (offline OK — rides the SSH tunnel)
-  txfreq        show the TX center frequency (11-tx run.conf)
-  txfreq 2.55   set it to 2.55 GHz (GHz by default; ≥1e6 = Hz) AND restart the
-                tx-beacon service so it's live immediately
-  txstatus      TX beacon service status (deploy/tx-status.sh)
-  tx_restart    restart the TX beacon service (re-reads run.conf)
-  pi_restart    reboot the whole Pi (AP + TX auto-return in ~1 min)
+  gitpull        pull the newest USRP_study_yishen (offline OK — rides the SSH tunnel)
+  tx_freq        show the TX center frequency (11-tx run.conf)
+  tx_freq 2.55   set it to 2.55 GHz (GHz by default; ≥1e6 = Hz) AND restart the
+                 tx-beacon service so it's live immediately
+  tx_status      TX beacon service status (deploy/tx-status.sh)
+  tx_restart     restart the TX beacon service (re-reads run.conf)
+  pi_restart     reboot the whole Pi (AP + TX auto-return in ~1 min)
 MENU
 esac   # printed at every login — no command to remember
 # <<< LRLocal field pi helpers <<<
 PIBLOCK
-ok "gitpull / txfreq / shortcuts in ~/.bashrc (new shells; or:  source ~/.bashrc)"
+ok "gitpull / tx_freq / shortcuts in ~/.bashrc (new shells; or:  source ~/.bashrc)"
 
 say "Done. From the laptop:"
 printf '  join Wi-Fi \033[1m%s\033[0m (pw %s), then:  \033[1mssh ddh-pi4-beacon\033[0m  (= user@%s;\n' "$AP_SSID" "$AP_PASS" "$AP_IP"
