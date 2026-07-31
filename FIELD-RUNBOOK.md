@@ -171,7 +171,7 @@ GIT_SSH_COMMAND='ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p"' \
 (HTTPS-remote clones would use `git -c http.proxy=socks5h://127.0.0.1:1080 pull`.)
 
 `pi-000-hotspot.sh` also installs **field shortcuts** into the Pi's `~/.bashrc`
-(the menu prints at every login; `shortcuts` reprints it):
+(the menu prints at every login, so there's nothing to remember):
 
 | | |
 |---|---|
