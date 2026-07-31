@@ -162,8 +162,13 @@ It configures **only `wlan0` + sshd** (NetworkManager AP, `ipv4.method shared`)
 — the USRP TX code, its environment, and eth0 are untouched. Re-run anytime;
 `AP_BAND=bg AP_CHAN=6` forces 2.4 GHz; `sudo nmcli con delete pi-field-ap`
 removes it. The `ssh ddh-pi4-beacon` shortcut carries the same reverse SOCKS
-tunnel, so on the Pi:
-`git -c http.proxy=socks5h://127.0.0.1:1080 pull` works offline too.
+tunnel, so the offline Pi can still pull. Its clones use the **SSH remote**
+(`git@github.com`), which needs the ProxyCommand form (not `http.proxy`):
+```sh
+GIT_SSH_COMMAND='ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p"' \
+  git -C ~/USRP_study_yishen pull --ff-only
+```
+(HTTPS-remote clones would use `git -c http.proxy=socks5h://127.0.0.1:1080 pull`.)
 
 ## 5. Empty the RX capture data (3 typed confirmations)
 
