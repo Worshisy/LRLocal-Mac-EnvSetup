@@ -111,7 +111,20 @@ tx_freq() {  # tx_freq → show; tx_freq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 
     echo "! restart failed — run:  sudo systemctl restart tx-beacon-b200mini"
   fi
 }
-alias tx_status='~/USRP_study_yishen/11-tx-beacon-usrpb200-code/deploy/tx-status.sh'
+tx_status() {  # deploy/tx-status.sh (untouched) + a final error/warning summary line
+  local proj="$HOME/USRP_study_yishen/11-tx-beacon-usrpb200-code" logdir nerr nwarn state
+  "$proj/deploy/tx-status.sh"
+  logdir="$(ls -td "$proj"/logs/*/ 2>/dev/null | head -1)"
+  nerr=$(grep -ciE 'error|fail|except' "$logdir/run.log" 2>/dev/null); nerr=${nerr:-0}
+  # 'Unexpected GPSDO string: LC_XO…' = benign B200 startup noise, don't count
+  nwarn=$(grep -iE 'warn' "$logdir/run.log" 2>/dev/null | grep -civE 'Unexpected GPSDO string'); nwarn=${nwarn:-0}
+  state="$(systemctl is-active tx-beacon-b200mini.service 2>/dev/null)"
+  if [ "$state" = "active" ] && [ "$nerr" = "0" ] && [ "$nwarn" = "0" ]; then
+    echo "[summary] service ACTIVE · run.log clean (0 errors, 0 warnings) ✓"
+  else
+    echo "[summary] service ${state^^} · run.log: $nerr error / $nwarn warning line(s) — check: ${logdir}run.log"
+  fi
+}
 alias tx_restart='sudo systemctl restart tx-beacon-b200mini.service && sleep 2 && pgrep -af tx_beacon_b200 | grep -o "\-\-freq [^ ]*" | sed "s/^/tx-beacon restarted → /"'
 alias pi_restart='sudo shutdown -r now'   # AP + TX come back on their own (~1 min)
 case $- in *i*) cat <<'MENU'
@@ -120,7 +133,7 @@ Pi field shortcuts:
   tx_freq        show the TX center frequency (11-tx run.conf)
   tx_freq 2.55   set it to 2.55 GHz (GHz by default; ≥1e6 = Hz) AND restart the
                  tx-beacon service so it's live immediately
-  tx_status      TX beacon service status (deploy/tx-status.sh)
+  tx_status      TX beacon service status + error/warning summary (last line)
   tx_restart     restart the TX beacon service (re-reads run.conf)
   pi_restart     reboot the whole Pi (AP + TX auto-return in ~1 min)
 MENU
