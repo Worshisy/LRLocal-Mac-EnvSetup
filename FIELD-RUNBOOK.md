@@ -75,6 +75,13 @@ physically attached there. Your laptop just SSHes in. The two jobs are:
 - `rx`  — `USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh` (continuous RX → SSD, AGC)
 - `psd` — newest-PSD web viewer (`field-001-psd-web.py`): the capture's per-file
   PSD PNGs, auto-refreshing at **`http://192.168.2.1:8081`** (`PSD_WEBPORT=…`)
+- `files` — web file browser over the whole capture volume (`/Volumes/USRPX`)
+  at **`http://192.168.2.1:8082`** (`FILES_WEBPORT=…`) — check/download anything
+  in the field without rsync
+
+RTK session data records into **`RTK_dev_for_cm-loc/data/<UTC>/`** per session
+(same UTC naming as the rx capture dirs); `data rtk` finds the newest
+automatically (old flat-layout sessions still found).
 
 ```sh
 ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's number, 01–06)

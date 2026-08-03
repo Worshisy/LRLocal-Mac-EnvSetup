@@ -9,18 +9,20 @@
 # with Ctrl-b then d (leaves it running).
 #
 # Jobs:
-#   rtk  — RTK_dev_for_cm-loc RELPOSNED monitor (web dashboard, headless)
-#   rx   — USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh (continuous RX → SSD, AGC)
-#   psd  — newest-PSD web viewer (field-001-psd-web.py) at http://<mini>:8081
+#   rtk   — RTK_dev_for_cm-loc RELPOSNED monitor (web dashboard, headless);
+#           session data → data/<UTC>/relposned_*.{csv,debug.log} (rx convention)
+#   rx    — USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh (continuous RX → SSD, AGC)
+#   psd   — newest-PSD web viewer (field-001-psd-web.py) at http://<mini>:8081
+#   files — web file browser over the capture volume at http://<mini>:8082
 #
 # Usage:
-#   ./field-000-jobs.sh start [rtk|rx|psd] # start all three, or just one
-#   ./field-000-jobs.sh attach <rtk|rx|psd># attach to live output (Ctrl-b d to detach)
-#   ./field-000-jobs.sh logs   <rtk|rx|psd># tail -f the PROCESS log file
+#   ./field-000-jobs.sh start [JOB]        # start all four, or just one
+#   ./field-000-jobs.sh attach <JOB>       # attach to live output (Ctrl-b d to detach)
+#   ./field-000-jobs.sh logs   <JOB>       # tail -f the PROCESS log file
 #   ./field-000-jobs.sh data <rtk|rtk-debug># tail -f the newest rtk SESSION data
 #                                          #   (relposned_<stamp>.csv / .debug.log)
 #   ./field-000-jobs.sh status             # what's running (+ newest rtk session)
-#   ./field-000-jobs.sh stop  [rtk|rx|psd] # stop all, or one
+#   ./field-000-jobs.sh stop   [JOB]       # stop all, or one   (JOB = rtk|rx|psd|files)
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
 #                        RX_FREQ=2.55     (pre-answers the freq prompt; GHz, or ≥1e6 = Hz)
 #                        RX_START=18:30|now  RX_START_TZ=utc  (pre-answer the start-time prompt)
@@ -61,9 +63,14 @@ RTK_DIR="$(find_dir RTK_dev_for_cm-loc || true)"
 RX_DIR="$(find_dir USRP_study_yishen || true)"; [ -n "$RX_DIR" ] && RX_DIR="$RX_DIR/01-rx-to-ssd-b200-agc"
 
 # [c] RTK session-data helpers: same dir the rtk job records into; newest
-# session picked by FILENAME stamp (not mtime)
+# session picked by FILENAME stamp (not mtime). Sessions live in data/<UTC>/
+# subdirs (rx convention); flat files from older sessions still found.
 rtk_data_dir() { [ -n "$RTK_DIR" ] && echo "${RTK_LOGDIR:-$RTK_DIR/data}"; }
-newest_rtk()   { ls "$1"/relposned_*"$2" 2>/dev/null | sort | tail -1; }   # $2 = .csv | .debug.log
+newest_rtk()   {  # $1 = data dir, $2 = .csv | .debug.log
+  ls "$1"/relposned_*"$2" "$1"/*/relposned_*"$2" 2>/dev/null \
+    | awk -F/ '{print $NF "|" $0}' | sort | tail -1 | cut -d'|' -f2
+}
+count_rtk()    { ls "$1"/relposned_*"$2" "$1"/*/relposned_*"$2" 2>/dev/null | wc -l | tr -d ' '; }
 
 # inner command runner: source conda, activate usrp, cd, run, tee to a log
 wrap() {  # $1=dir  $2=command  $3=logfile
@@ -191,7 +198,9 @@ start_one() {
       local web="${RX_WEBPORT:-8000}"
       # [c] record every session onto the capture SSD: lean CSV (time+loc) for
       # use, unfiltered .debug.log for field debug (Yi 2026-08-03). RTK_LOGDIR overrides.
-      local rtklog="${RTK_LOGDIR:-$RTK_DIR/data}"
+      # [c] per-session data/<UTC>/ dir, same naming convention as the rx captures
+      local rtklog="${RTK_LOGDIR:-$RTK_DIR/data/$(date -u +%Y%m%d-%H%M%S)}"
+      mkdir -p "$rtklog"
       # [c] --no-open-browser: headless start must not pop a browser on the mini
       # [c] python -u: unbuffered stdout — piped through tee, block buffering
       # otherwise leaves rtk.log empty (found 2026-08-03: 0-byte rtk.log)
@@ -199,6 +208,14 @@ start_one() {
       "$TMUX_BIN" new-session -d -s rtk "$(wrap "$RTK_DIR" "$cmd" "$LOGDIR/rtk.log")"
       ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)"
       ok "rtk session data → $rtklog/relposned_<stamp>.csv (+ .debug.log)" ;;
+    files)
+      # [c] web file browser over the whole capture volume (Yi 2026-08-03):
+      # python's built-in listing server — browse/download anything in the field
+      "$TMUX_BIN" has-session -t files 2>/dev/null && { ok "files already running (http://<this-mac-ip>:${FILES_WEBPORT:-8082})"; return 0; }
+      local vol="${CAPTURE_VOL:-$(ls -d /Volumes/USRP* 2>/dev/null | head -1)}"
+      [ -z "$vol" ] && { warn "no capture volume (/Volumes/USRP* or \$CAPTURE_VOL)"; return 1; }
+      "$TMUX_BIN" new-session -d -s files "$(wrap "$vol" "python3 -u -m http.server ${FILES_WEBPORT:-8082} -d $vol" "$LOGDIR/files.log")"
+      ok "file browser started → http://<this-mac-ip>:${FILES_WEBPORT:-8082}  (browsing $vol)" ;;
     psd)
       # [c] newest-PSD browser view (Yi 2026-08-03): quick check of what the
       # rx capture is seeing, from the laptop at http://<mini-ip>:8081
@@ -226,7 +243,7 @@ start_one() {
       # stdin </dev/null so no run.sh prompt can ever hang the detached pane.
       "$TMUX_BIN" new-session -d -s rx "$(wrap "$RX_DIR" "FORCE_RUN=1 ./run.sh$freq_args </dev/null" "$LOGDIR/rx.log")"
       ok "rx started (freq ${RX_FREQ_HZ:-run.conf default} Hz${RX_START_HHMM:+, deferred to $RX_START_HHMM}) → 01-rx-to-ssd-b200-agc/run.sh  (log: $LOGDIR/rx.log)" ;;
-    *) warn "unknown job '$1' (use rtk or rx)"; return 1 ;;
+    *) warn "unknown job '$1' (use rtk, rx, psd or files)"; return 1 ;;
   esac
 }
 
@@ -235,12 +252,13 @@ case "$CMD" in
     need_tmux; need_conda
     say "Starting field jobs in tmux (survive SSH disconnect)"
     sync_time_via_tunnel        # [c] clock sanity before any timed start
-    if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; fi
+    if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; start_one files; fi
     # [c] print the concrete dashboard URLs (Yi 2026-08-03) — AP address first
     _ip="$(ipconfig getifaddr bridge100 2>/dev/null || ipconfig getifaddr en0 2>/dev/null || echo 192.168.2.1)"
     say "Dashboards — open on the laptop (joined to this mini's Wi-Fi):"
     ok "RTK position:   http://$_ip:${RX_WEBPORT:-8000}"
     ok "RX PSD viewer:  http://$_ip:${PSD_WEBPORT:-8081}   (newest PSD, auto-refresh)"
+    ok "File browser:   http://$_ip:${FILES_WEBPORT:-8082}   (whole capture volume)"
     say "Reconnect later, then:  ./field-000-jobs.sh attach rx   (or rtk) ·  ./field-000-jobs.sh logs rx" ;;
   attach)
     need_tmux; [ -z "$TARGET" ] && { warn "which? ./field-000-jobs.sh attach rx|rtk"; exit 1; }
@@ -261,7 +279,7 @@ case "$CMD" in
     _f="$(newest_rtk "$_rd" "$_suf")"
     [ -z "$_f" ] && { warn "no session data in $_rd — was rtk started with recording? look for 'Session recording:' in $LOGDIR/rtk.log"; exit 1; }
     ok "watching: $_f"
-    ok "$(ls "$_rd"/relposned_*"$_suf" 2>/dev/null | wc -l | tr -d ' ') session file(s) in $_rd · this one: $(du -h "$_f" | cut -f1)  (Ctrl-C to stop)"
+    ok "$(count_rtk "$_rd" "$_suf") session file(s) under $_rd · this one: $(du -h "$_f" | cut -f1)  (Ctrl-C to stop)"
     exec tail -f "$_f" ;;
   status)
     need_tmux; say "tmux sessions"; "$TMUX_BIN" ls 2>/dev/null || echo "  (none)"
@@ -278,7 +296,7 @@ case "$CMD" in
   stop)
     need_tmux
     if [ -n "$TARGET" ]; then "$TMUX_BIN" kill-session -t "$TARGET" 2>/dev/null && ok "stopped $TARGET" || warn "no session $TARGET";
-    else for s in rtk rx psd; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
+    else for s in rtk rx psd files; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
   *)
     # [c] print the whole header comment block (stops at the first non-# line,
     # so it survives header growth — the old fixed 2,30p range leaked code)

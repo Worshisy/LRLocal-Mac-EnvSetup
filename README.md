@@ -31,7 +31,7 @@ Day-to-day scripts (see [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)):
 
 | Script | Runs on | Covers |
 |---|---|---|
-| `field-000-jobs.sh` | mini | RTK monitor + USRP RX→SSD + PSD viewer in detached tmux (start/attach/logs/status/stop) |
+| `field-000-jobs.sh` | mini | RTK monitor + USRP RX→SSD + PSD viewer + file browser in detached tmux |
 | `field-001-psd-web.py` | mini | newest-PSD browser view on :8081 (job `psd` of field-000) |
 | `field-020-empty-rx-data.sh` | mini | wipe the RX captures — 3 typed confirmations |
 | `field-010-update-repos.sh` | mini | git pull LRLocal-V2 + USRP + RTK repos + this kit through the operator tunnel (FT232 excluded) |

@@ -25,6 +25,7 @@
 | TX Pi AP | SSID **`ddh-pi4-beacon`** · pw **`eecs2435`** · Pi = **`192.168.3.1`** · `ssh ddh-pi4-beacon` (user `user`) |
 | RTK dashboard | `http://192.168.2.1:8000` |
 | RX PSD viewer | `http://192.168.2.1:8081` — newest PSD image, auto-refresh |
+| File browser | `http://192.168.2.1:8082` — browse/download the whole capture volume |
 | Capture logs on mini | `~/field-logs/{rtk,rx}.log` |
 
 ---
@@ -71,6 +72,7 @@ With the laptop on `macmini-field`, open:
 ```
 http://192.168.2.1:8000     # RTK position dashboard
 http://192.168.2.1:8081     # newest RX PSD image (auto-refreshes as files rotate)
+http://192.168.2.1:8082     # file browser — whole capture volume (/Volumes/USRPX)
 ```
 
 ## 5. Status / stop
