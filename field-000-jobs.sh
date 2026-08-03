@@ -193,7 +193,9 @@ start_one() {
       # use, unfiltered .debug.log for field debug (Yi 2026-08-03). RTK_LOGDIR overrides.
       local rtklog="${RTK_LOGDIR:-$RTK_DIR/data}"
       # [c] --no-open-browser: headless start must not pop a browser on the mini
-      local cmd="python relposned_monitor.py --mode web --host 0.0.0.0 --no-open-browser --web-port $web --port ${port:-/dev/cu.usbmodem212301} --log-dir $rtklog"
+      # [c] python -u: unbuffered stdout — piped through tee, block buffering
+      # otherwise leaves rtk.log empty (found 2026-08-03: 0-byte rtk.log)
+      local cmd="python -u relposned_monitor.py --mode web --host 0.0.0.0 --no-open-browser --web-port $web --port ${port:-/dev/cu.usbmodem212301} --log-dir $rtklog"
       "$TMUX_BIN" new-session -d -s rtk "$(wrap "$RTK_DIR" "$cmd" "$LOGDIR/rtk.log")"
       ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)"
       ok "rtk session data → $rtklog/relposned_<stamp>.csv (+ .debug.log)" ;;
@@ -207,7 +209,7 @@ start_one() {
       [ -z "$dataroot" ] && dataroot="$(cd "$RX_DIR/.." && pwd)/data"
       [ -d "$dataroot" ] || { warn "capture data root not found: $dataroot"; return 1; }
       local kit; kit="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-      "$TMUX_BIN" new-session -d -s psd "$(wrap "$RX_DIR" "python3 $kit/field-001-psd-web.py --root $dataroot --port ${PSD_WEBPORT:-8081}" "$LOGDIR/psd.log")"
+      "$TMUX_BIN" new-session -d -s psd "$(wrap "$RX_DIR" "python3 -u $kit/field-001-psd-web.py --root $dataroot --port ${PSD_WEBPORT:-8081}" "$LOGDIR/psd.log")"
       ok "psd viewer started → http://<this-mac-ip>:${PSD_WEBPORT:-8081}  (newest PSD, auto-refresh)" ;;
     rx)
       [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
