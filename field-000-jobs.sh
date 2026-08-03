@@ -213,6 +213,11 @@ case "$CMD" in
     say "Starting field jobs in tmux (survive SSH disconnect)"
     sync_time_via_tunnel        # [c] clock sanity before any timed start
     if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; fi
+    # [c] print the concrete dashboard URLs (Yi 2026-08-03) — AP address first
+    _ip="$(ipconfig getifaddr bridge100 2>/dev/null || ipconfig getifaddr en0 2>/dev/null || echo 192.168.2.1)"
+    say "Dashboards — open on the laptop (joined to this mini's Wi-Fi):"
+    ok "RTK position:   http://$_ip:${RX_WEBPORT:-8000}"
+    ok "RX PSD viewer:  http://$_ip:${PSD_WEBPORT:-8081}   (newest PSD, auto-refresh)"
     say "Reconnect later, then:  ./field-000-jobs.sh attach rx   (or rtk) ·  ./field-000-jobs.sh logs rx" ;;
   attach)
     need_tmux; [ -z "$TARGET" ] && { warn "which? ./field-000-jobs.sh attach rx|rtk"; exit 1; }
