@@ -73,6 +73,8 @@ close SSH**, and you can **re-attach to see live output**. Uses **tmux**.
 physically attached there. Your laptop just SSHes in. The two jobs are:
 - `rtk` — `RTK_dev_for_cm-loc` RELPOSNED web monitor (headless, `--host 0.0.0.0`)
 - `rx`  — `USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh` (continuous RX → SSD, AGC)
+- `psd` — newest-PSD web viewer (`field-001-psd-web.py`): the capture's per-file
+  PSD PNGs, auto-refreshing at **`http://192.168.2.1:8081`** (`PSD_WEBPORT=…`)
 
 ```sh
 ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's number, 01–06)
@@ -85,7 +87,8 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh status      # what's running
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh stop        # stop both
 ```
-- RTK web dashboard is reachable from the laptop at **`http://192.168.2.1:8000`**.
+- RTK web dashboard is reachable from the laptop at **`http://192.168.2.1:8000`**;
+  the RX PSD viewer at **`http://192.168.2.1:8081`**.
 - Auto-detects repo locations (kit's parent dir / `~/Projects` / `~`) and the RTK
   serial port. Override: `REPO_BASE=…  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000`.
 - Starting **rx** always asks for the **RX center frequency in GHz** — type

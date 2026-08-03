@@ -24,6 +24,7 @@
 | Kit path on mini | `~/LRLocal-Mac-EnvSetup` |
 | TX Pi AP | SSID **`ddh-pi4-beacon`** · pw **`eecs2435`** · Pi = **`192.168.3.1`** · `ssh ddh-pi4-beacon` (user `user`) |
 | RTK dashboard | `http://192.168.2.1:8000` |
+| RX PSD viewer | `http://192.168.2.1:8081` — newest PSD image, auto-refresh |
 | Capture logs on mini | `~/field-logs/{rtk,rx}.log` |
 
 ---
@@ -65,10 +66,11 @@ Prefer a plain scrolling log instead of the tmux view:
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh logs rx     # tail -f ~/field-logs/rx.log  (Ctrl-c to stop tailing)
 ```
 
-## 4. RTK dashboard in a browser (from the laptop)
+## 4. Dashboards in a browser (from the laptop)
 With the laptop on `macmini-field`, open:
 ```
-http://192.168.2.1:8000
+http://192.168.2.1:8000     # RTK position dashboard
+http://192.168.2.1:8081     # newest RX PSD image (auto-refreshes as files rotate)
 ```
 
 ## 5. Status / stop

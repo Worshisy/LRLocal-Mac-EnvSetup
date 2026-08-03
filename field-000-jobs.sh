@@ -11,13 +11,14 @@
 # Jobs:
 #   rtk  — RTK_dev_for_cm-loc RELPOSNED monitor (web dashboard, headless)
 #   rx   — USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh (continuous RX → SSD, AGC)
+#   psd  — newest-PSD web viewer (field-001-psd-web.py) at http://<mini>:8081
 #
 # Usage:
-#   ./field-000-jobs.sh start [rtk|rx]     # start both, or just one
-#   ./field-000-jobs.sh attach <rtk|rx>    # attach to live output (Ctrl-b d to detach)
-#   ./field-000-jobs.sh logs   <rtk|rx>    # tail -f the log file
+#   ./field-000-jobs.sh start [rtk|rx|psd] # start all three, or just one
+#   ./field-000-jobs.sh attach <rtk|rx|psd># attach to live output (Ctrl-b d to detach)
+#   ./field-000-jobs.sh logs   <rtk|rx|psd># tail -f the log file
 #   ./field-000-jobs.sh status             # what's running
-#   ./field-000-jobs.sh stop  [rtk|rx]     # stop both, or one
+#   ./field-000-jobs.sh stop  [rtk|rx|psd] # stop all, or one
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
 #                        RX_FREQ=2.55     (pre-answers the freq prompt; GHz, or ≥1e6 = Hz)
 #                        RX_START=18:30|now  RX_START_TZ=utc  (pre-answer the start-time prompt)
@@ -177,6 +178,18 @@ start_one() {
       local cmd="python relposned_monitor.py --mode web --host 0.0.0.0 --web-port $web --port ${port:-/dev/cu.usbmodem212301}"
       "$TMUX_BIN" new-session -d -s rtk "$(wrap "$RTK_DIR" "$cmd" "$LOGDIR/rtk.log")"
       ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)" ;;
+    psd)
+      # [c] newest-PSD browser view (Yi 2026-08-03): quick check of what the
+      # rx capture is seeing, from the laptop at http://<mini-ip>:8081
+      [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
+      "$TMUX_BIN" has-session -t psd 2>/dev/null && { ok "psd already running (http://<this-mac-ip>:${PSD_WEBPORT:-8081})"; return 0; }
+      local dataroot
+      dataroot="$(sed -n 's/^OUT=\([^ #]*\).*/\1/p' "$RX_DIR/run.conf" 2>/dev/null | head -1)"
+      [ -z "$dataroot" ] && dataroot="$(cd "$RX_DIR/.." && pwd)/data"
+      [ -d "$dataroot" ] || { warn "capture data root not found: $dataroot"; return 1; }
+      local kit; kit="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+      "$TMUX_BIN" new-session -d -s psd "$(wrap "$RX_DIR" "python3 $kit/field-001-psd-web.py --root $dataroot --port ${PSD_WEBPORT:-8081}" "$LOGDIR/psd.log")"
+      ok "psd viewer started → http://<this-mac-ip>:${PSD_WEBPORT:-8081}  (newest PSD, auto-refresh)" ;;
     rx)
       [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
       "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-000-jobs.sh attach rx)"; return 0; }
@@ -199,7 +212,7 @@ case "$CMD" in
     need_tmux; need_conda
     say "Starting field jobs in tmux (survive SSH disconnect)"
     sync_time_via_tunnel        # [c] clock sanity before any timed start
-    if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; fi
+    if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; fi
     say "Reconnect later, then:  ./field-000-jobs.sh attach rx   (or rtk) ·  ./field-000-jobs.sh logs rx" ;;
   attach)
     need_tmux; [ -z "$TARGET" ] && { warn "which? ./field-000-jobs.sh attach rx|rtk"; exit 1; }
@@ -213,7 +226,7 @@ case "$CMD" in
   stop)
     need_tmux
     if [ -n "$TARGET" ]; then "$TMUX_BIN" kill-session -t "$TARGET" 2>/dev/null && ok "stopped $TARGET" || warn "no session $TARGET";
-    else for s in rtk rx; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
+    else for s in rtk rx psd; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
   *)
     # [c] print the whole header comment block (stops at the first non-# line,
     # so it survives header growth — the old fixed 2,30p range leaked code)
