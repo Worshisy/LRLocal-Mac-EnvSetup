@@ -83,7 +83,8 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
 
 # later, reconnect and watch:
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh attach rx   # live tmux view; Ctrl-b then d to detach
-~/LRLocal-Mac-EnvSetup/field-000-jobs.sh logs   rtk  # or tail the log file
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh logs   rtk  # or tail the process log file
+~/LRLocal-Mac-EnvSetup/field-000-jobs.sh data   rtk  # newest SESSION data CSV, live (rtk-debug = raw log)
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh status      # what's running
 ~/LRLocal-Mac-EnvSetup/field-000-jobs.sh stop        # stop both
 ```

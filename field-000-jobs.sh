@@ -16,8 +16,10 @@
 # Usage:
 #   ./field-000-jobs.sh start [rtk|rx|psd] # start all three, or just one
 #   ./field-000-jobs.sh attach <rtk|rx|psd># attach to live output (Ctrl-b d to detach)
-#   ./field-000-jobs.sh logs   <rtk|rx|psd># tail -f the log file
-#   ./field-000-jobs.sh status             # what's running
+#   ./field-000-jobs.sh logs   <rtk|rx|psd># tail -f the PROCESS log file
+#   ./field-000-jobs.sh data <rtk|rtk-debug># tail -f the newest rtk SESSION data
+#                                          #   (relposned_<stamp>.csv / .debug.log)
+#   ./field-000-jobs.sh status             # what's running (+ newest rtk session)
 #   ./field-000-jobs.sh stop  [rtk|rx|psd] # stop all, or one
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
 #                        RX_FREQ=2.55     (pre-answers the freq prompt; GHz, or ≥1e6 = Hz)
@@ -57,6 +59,11 @@ find_dir() {  # $1 = repo name
 }
 RTK_DIR="$(find_dir RTK_dev_for_cm-loc || true)"
 RX_DIR="$(find_dir USRP_study_yishen || true)"; [ -n "$RX_DIR" ] && RX_DIR="$RX_DIR/01-rx-to-ssd-b200-agc"
+
+# [c] RTK session-data helpers: same dir the rtk job records into; newest
+# session picked by FILENAME stamp (not mtime)
+rtk_data_dir() { [ -n "$RTK_DIR" ] && echo "${RTK_LOGDIR:-$RTK_DIR/data}"; }
+newest_rtk()   { ls "$1"/relposned_*"$2" 2>/dev/null | sort | tail -1; }   # $2 = .csv | .debug.log
 
 # inner command runner: source conda, activate usrp, cd, run, tee to a log
 wrap() {  # $1=dir  $2=command  $3=logfile
@@ -182,10 +189,14 @@ start_one() {
       local ndev; ndev=$(ls /dev/cu.usbmodem* 2>/dev/null | wc -l | tr -d ' ')
       [ "$ndev" -gt 1 ] && warn "$ndev usbmodem devices present — using $port (override: RTK_PORT=…)"
       local web="${RX_WEBPORT:-8000}"
+      # [c] record every session onto the capture SSD: lean CSV (time+loc) for
+      # use, unfiltered .debug.log for field debug (Yi 2026-08-03). RTK_LOGDIR overrides.
+      local rtklog="${RTK_LOGDIR:-$RTK_DIR/data}"
       # [c] --no-open-browser: headless start must not pop a browser on the mini
-      local cmd="python relposned_monitor.py --mode web --host 0.0.0.0 --no-open-browser --web-port $web --port ${port:-/dev/cu.usbmodem212301}"
+      local cmd="python relposned_monitor.py --mode web --host 0.0.0.0 --no-open-browser --web-port $web --port ${port:-/dev/cu.usbmodem212301} --log-dir $rtklog"
       "$TMUX_BIN" new-session -d -s rtk "$(wrap "$RTK_DIR" "$cmd" "$LOGDIR/rtk.log")"
-      ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)" ;;
+      ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)"
+      ok "rtk session data → $rtklog/relposned_<stamp>.csv (+ .debug.log)" ;;
     psd)
       # [c] newest-PSD browser view (Yi 2026-08-03): quick check of what the
       # rx capture is seeing, from the laptop at http://<mini-ip>:8081
@@ -235,9 +246,33 @@ case "$CMD" in
   logs)
     [ -z "$TARGET" ] && { warn "which? ./field-000-jobs.sh logs rx|rtk"; exit 1; }
     exec tail -f "$LOGDIR/$TARGET.log" ;;
+  data)
+    # [c] view the rtk SESSION data files (CSV epochs / debug log) — distinct
+    # from the process log (`logs rtk`). Newest session by filename stamp.
+    _rd="$(rtk_data_dir)"
+    [ -z "$_rd" ] && { warn "RTK_dev_for_cm-loc not found (set REPO_BASE)"; exit 1; }
+    case "$TARGET" in
+      rtk)       _suf=.csv ;;
+      rtk-debug) _suf=.debug.log ;;
+      *) warn "which? ./field-000-jobs.sh data rtk|rtk-debug"; exit 1 ;;
+    esac
+    _f="$(newest_rtk "$_rd" "$_suf")"
+    [ -z "$_f" ] && { warn "no session data in $_rd — was rtk started with recording? look for 'Session recording:' in $LOGDIR/rtk.log"; exit 1; }
+    ok "watching: $_f"
+    ok "$(ls "$_rd"/relposned_*"$_suf" 2>/dev/null | wc -l | tr -d ' ') session file(s) in $_rd · this one: $(du -h "$_f" | cut -f1)  (Ctrl-C to stop)"
+    exec tail -f "$_f" ;;
   status)
     need_tmux; say "tmux sessions"; "$TMUX_BIN" ls 2>/dev/null || echo "  (none)"
-    say "logs in $LOGDIR"; ls -la "$LOGDIR" 2>/dev/null ;;
+    say "logs in $LOGDIR"; ls -la "$LOGDIR" 2>/dev/null
+    # [c] newest rtk session data pair + CSV row count
+    _rd="$(rtk_data_dir)"; _csv=""; [ -n "$_rd" ] && _csv="$(newest_rtk "$_rd" .csv)"
+    if [ -n "$_csv" ]; then
+      say "newest rtk session data (in $_rd)"
+      _rows=$(wc -l < "$_csv" | tr -d ' '); [ "$_rows" -gt 0 ] && _rows=$((_rows-1))
+      ok "$(basename "$_csv")  ($_rows data rows)"
+      _dbg="${_csv%.csv}.debug.log"
+      [ -f "$_dbg" ] && ok "$(basename "$_dbg")  ($(du -h "$_dbg" | cut -f1))"
+    fi ;;
   stop)
     need_tmux
     if [ -n "$TARGET" ]; then "$TMUX_BIN" kill-session -t "$TARGET" 2>/dev/null && ok "stopped $TARGET" || warn "no session $TARGET";
