@@ -80,6 +80,19 @@ proxyoff() { unset ALL_PROXY HTTP_PROXY HTTPS_PROXY http_proxy https_proxy; echo
 EOF
 ok "gitp / proxyon / proxyoff in ~/.zshrc (new shells; or:  source ~/.zshrc)"
 
+# ── 3c. Passwordless sudo for clock-set (field-000 tunnel time-sync) ──────────
+# [c] scoped NOPASSWD for /bin/date only, so the time-sync also works in no-tty
+# ssh sessions. visudo-validated first — a bad sudoers.d file breaks sudo.
+say "Installing sudoers rule: passwordless 'date' (tunnel clock sync)"
+echo "$USER ALL=(ALL) NOPASSWD: /bin/date" > /tmp/lrlocal-timesync
+if visudo -cf /tmp/lrlocal-timesync >/dev/null 2>&1; then
+  sudo install -m 0440 /tmp/lrlocal-timesync /etc/sudoers.d/lrlocal-timesync \
+    && ok "sudoers.d/lrlocal-timesync installed (/bin/date only)"
+else
+  warn "sudoers rule failed validation — clock sync needs interactive sudo instead"
+fi
+rm -f /tmp/lrlocal-timesync
+
 # ── 4. How to reach this Mac ──────────────────────────────────────────────────
 say "Connection info — give this to whoever connects"
 USERN="$(whoami)"

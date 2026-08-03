@@ -129,10 +129,13 @@ sync_time_via_tunnel() {
     ok "clock OK (drift ${drift}s vs internet time, via tunnel)"
   else
     before="$(date '+%H:%M:%S')"
-    if sudo date -u -f '%a, %d %b %Y %H:%M:%S GMT' "$hdr" >/dev/null 2>&1; then
+    # [c] sudo -n first (works passwordless via the setup-040 sudoers rule /
+    # cached credentials, incl. no-tty ssh); interactive sudo only with a tty
+    if sudo -n date -u -f '%a, %d %b %Y %H:%M:%S GMT' "$hdr" >/dev/null 2>&1 \
+       || { [ -t 0 ] && sudo date -u -f '%a, %d %b %Y %H:%M:%S GMT' "$hdr" >/dev/null 2>&1; }; then
       ok "clock was ${drift}s off — synced via tunnel: $before → $(date '+%H:%M:%S') local"
     else
-      warn "clock is ${drift}s off but couldn't set it (sudo date failed) — fix manually"
+      warn "clock is ${drift}s off but couldn't set it (sudo needs a tty/password) — fix manually"
     fi
   fi
 }
@@ -172,10 +175,15 @@ start_one() {
     rtk)
       [ -z "$RTK_DIR" ] && { warn "RTK_dev_for_cm-loc not found (set REPO_BASE)"; return 1; }
       "$TMUX_BIN" has-session -t rtk 2>/dev/null && { ok "rtk already running (attach: ./field-000-jobs.sh attach rtk)"; return 0; }
+      # [c] guard against a monitor started OUTSIDE tmux (port+serial collide)
+      pgrep -f relposned_monitor >/dev/null 2>&1 && { warn "a relposned_monitor is already running outside tmux — stop it first (pgrep -fl relposned_monitor)"; return 1; }
       local port="${RTK_PORT:-$(ls /dev/cu.usbmodem* 2>/dev/null | head -1)}"
       [ -z "$port" ] && warn "no /dev/cu.usbmodem* found — plug in the rover, or set RTK_PORT"
+      local ndev; ndev=$(ls /dev/cu.usbmodem* 2>/dev/null | wc -l | tr -d ' ')
+      [ "$ndev" -gt 1 ] && warn "$ndev usbmodem devices present — using $port (override: RTK_PORT=…)"
       local web="${RX_WEBPORT:-8000}"
-      local cmd="python relposned_monitor.py --mode web --host 0.0.0.0 --web-port $web --port ${port:-/dev/cu.usbmodem212301}"
+      # [c] --no-open-browser: headless start must not pop a browser on the mini
+      local cmd="python relposned_monitor.py --mode web --host 0.0.0.0 --no-open-browser --web-port $web --port ${port:-/dev/cu.usbmodem212301}"
       "$TMUX_BIN" new-session -d -s rtk "$(wrap "$RTK_DIR" "$cmd" "$LOGDIR/rtk.log")"
       ok "rtk started → web dashboard at http://<this-mac-ip>:$web  (log: $LOGDIR/rtk.log)" ;;
     psd)
@@ -193,6 +201,8 @@ start_one() {
     rx)
       [ -z "$RX_DIR" ] && { warn "USRP 01-rx-to-ssd-b200-agc not found (set REPO_BASE)"; return 1; }
       "$TMUX_BIN" has-session -t rx 2>/dev/null && { ok "rx already running (attach: ./field-000-jobs.sh attach rx)"; return 0; }
+      # [c] guard against a capture started OUTSIDE tmux (device collision)
+      pgrep -f rx_to_ssd >/dev/null 2>&1 && { warn "an rx_to_ssd capture is already running outside tmux — stop it first (pgrep -fl rx_to_ssd)"; return 1; }
       disable_spotlight_capture   # so run.sh doesn't block on the Spotlight prompt / overflow
       ask_rx_freq                 # [c] confirm center freq every start; --freq overrides run.conf
       ask_rx_start                # [c] optional deferred start (run.sh --start)
