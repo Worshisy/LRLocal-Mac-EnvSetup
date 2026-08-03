@@ -83,7 +83,17 @@ fi
 # ── 4. Field helper aliases into ~/.bashrc ────────────────────────────────────
 # [c] gitpull / tx_freq / shortcuts (Yi, 2026-07-31). Strip by stable prefix →
 # re-runs and renames replace the block, never duplicate it.
-say "Installing field helpers (gitpull / tx_freq / shortcuts) into ~/.bashrc"
+say "Installing field helpers (gitpull / tx_freq / …) into ~/.bashrc"
+# [c] passwordless sudo for /usr/bin/date ONLY — the login clock-sync must not
+# prompt. Validated with visudo before install (a bad sudoers.d breaks sudo).
+echo "$USER ALL=(root) NOPASSWD: /usr/bin/date" > /tmp/lrlocal-timesync
+if visudo -cf /tmp/lrlocal-timesync >/dev/null 2>&1; then
+  sudo install -m 0440 /tmp/lrlocal-timesync /etc/sudoers.d/lrlocal-timesync \
+    && ok "sudoers: passwordless 'date' for login time-sync"
+else
+  warn "sudoers rule failed validation — login sync will only report drift"
+fi
+rm -f /tmp/lrlocal-timesync
 BRC="$HOME/.bashrc"; touch "$BRC"
 PIH_PREFIX='# >>> LRLocal field pi helpers'
 PIH_END='# <<< LRLocal field pi helpers <<<'
@@ -111,9 +121,8 @@ tx_freq() {  # tx_freq → show; tx_freq 2.55 → set 2.55 GHz (≥1e6 = Hz) in 
     echo "! restart failed — run:  sudo systemctl restart tx-beacon-b200mini"
   fi
 }
-tx_status() {  # deploy/tx-status.sh (untouched) + a final error/warning summary line
+tx_status() {  # health summary, then LIVE TX output (like attach) — Ctrl-C exits
   local proj="$HOME/USRP_study_yishen/11-tx-beacon-usrpb200-code" logdir nerr nwarn state
-  "$proj/deploy/tx-status.sh"
   logdir="$(ls -td "$proj"/logs/*/ 2>/dev/null | head -1)"
   nerr=$(grep -ciE 'error|fail|except' "$logdir/run.log" 2>/dev/null); nerr=${nerr:-0}
   # 'Unexpected GPSDO string: LC_XO…' = benign B200 startup noise, don't count
@@ -124,20 +133,36 @@ tx_status() {  # deploy/tx-status.sh (untouched) + a final error/warning summary
   else
     echo "[summary] service ${state^^} · run.log: $nerr error / $nwarn warning line(s) — check: ${logdir}run.log"
   fi
+  echo "── live TX output (Ctrl-C to exit; full snapshot: $proj/deploy/tx-status.sh) ──"
+  journalctl -fu tx-beacon-b200mini.service -n 15
+}
+# [c] clock sync at login — no NTP off-grid; rides the operator tunnel when an
+# `ssh ddh-pi4-beacon` session carries one. Instant skip if no tunnel listener.
+_lrl_timesync() {
+  local hdr rs drift
+  (exec 3<>/dev/tcp/127.0.0.1/1080) 2>/dev/null || { echo "[time] no tunnel — clock unchecked"; return 0; }
+  hdr=$(curl -sI -m 4 -x socks5h://127.0.0.1:1080 https://www.google.com 2>/dev/null | sed -n 's/^[Dd]ate: //p' | tr -d '\r')
+  [ -z "$hdr" ] && { echo "[time] tunnel up but time fetch failed — clock unchecked"; return 0; }
+  rs=$(date -ud "$hdr" +%s 2>/dev/null) || return 0
+  drift=$(( rs - $(date +%s) ))
+  if [ "${drift#-}" -lt 2 ]; then echo "[time] clock OK (drift ${drift}s vs internet)"
+  elif sudo -n date -us "@$rs" >/dev/null 2>&1; then echo "[time] clock was ${drift}s off — SYNCED via tunnel"
+  else echo "[time] clock ${drift}s off — couldn't set; run:  sudo date -us @$rs"
+  fi
 }
 alias tx_restart='sudo systemctl restart tx-beacon-b200mini.service && sleep 2 && pgrep -af tx_beacon_b200 | grep -o "\-\-freq [^ ]*" | sed "s/^/tx-beacon restarted → /"'
 alias pi_restart='sudo shutdown -r now'   # AP + TX come back on their own (~1 min)
-case $- in *i*) cat <<'MENU'
+case $- in *i*) _lrl_timesync; cat <<'MENU'
 Pi field shortcuts:
   gitpull        pull the newest USRP_study_yishen (offline OK — rides the SSH tunnel)
   tx_freq        show the TX center frequency (11-tx run.conf)
   tx_freq 2.55   set it to 2.55 GHz (GHz by default; ≥1e6 = Hz) AND restart the
                  tx-beacon service so it's live immediately
-  tx_status      TX beacon service status + error/warning summary (last line)
+  tx_status      health summary + LIVE TX output (Ctrl-C to exit)
   tx_restart     restart the TX beacon service (re-reads run.conf)
   pi_restart     reboot the whole Pi (AP + TX auto-return in ~1 min)
 MENU
-esac   # printed at every login — no command to remember
+esac   # time-synced + printed at every login — no command to remember
 # <<< LRLocal field pi helpers <<<
 PIBLOCK
 ok "gitpull / tx_freq / shortcuts in ~/.bashrc (new shells; or:  source ~/.bashrc)"

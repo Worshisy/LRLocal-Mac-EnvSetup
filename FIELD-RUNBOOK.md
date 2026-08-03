@@ -178,13 +178,23 @@ GIT_SSH_COMMAND='ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p"' \
 | `gitpull` | pull the newest `USRP_study_yishen` — offline OK, rides the tunnel |
 | `tx_freq` | show the TX center frequency (11-tx `run.conf`) |
 | `tx_freq 2.55` | set 2.55 GHz (GHz default, ≥1e6 = Hz, B200-range-checked) **and restart the tx-beacon service so it's live immediately** (asks sudo) |
-| `tx_status` | TX beacon service status (`deploy/tx-status.sh`) |
+| `tx_status` | health summary line, then **live TX output** (Ctrl-C exits; full snapshot: `deploy/tx-status.sh`) |
 | `tx_restart` | restart the TX beacon service (re-reads `run.conf`) |
 | `pi_restart` | reboot the whole Pi — AP + TX auto-return in ~1 min |
 
 The TX service (`tx-beacon-b200mini`, system unit) re-reads `run.conf` at every
 boot — verified 2026-07-31: a bare `FREQ` edit + reboot came up transmitting at
 the new frequency (`act_freq_hz = 2.55e+09` in the run meta).
+
+Every login also **syncs the Pi's clock through the tunnel** (HTTPS Date, sets
+via a scoped passwordless-sudo `date` rule when ≥ 2 s off; silently skipped
+when no tunnel) — no RTC battery + off-grid means days of drift otherwise
+(first login after the 2026-08 weekend was 2.1 days off and self-corrected).
+
+⚠ **USB power:** the radio + RTK rover together can trip the Pi's USB
+over-current protection (seen 2026-08-03: `over-current change` storms, radio
+firmware load fails → no LED, service flaps). Put the radio on a **powered USB
+hub** (or a full B210 on its DC supply) before adding the RTK board.
 
 ## 5. Empty the RX capture data (3 typed confirmations)
 
