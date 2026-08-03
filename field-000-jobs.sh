@@ -190,7 +190,7 @@ start_one() {
       [ -z "$RTK_DIR" ] && { warn "RTK_dev_for_cm-loc not found (set REPO_BASE)"; return 1; }
       "$TMUX_BIN" has-session -t rtk 2>/dev/null && { ok "rtk already running (attach: ./field-000-jobs.sh attach rtk)"; return 0; }
       # [c] guard against a monitor started OUTSIDE tmux (port+serial collide)
-      pgrep -f relposned_monitor >/dev/null 2>&1 && { warn "a relposned_monitor is already running outside tmux — stop it first (pgrep -fl relposned_monitor)"; return 1; }
+      pgrep -f relposned_monitor 2>/dev/null | xargs -n1 ps -o comm= -p 2>/dev/null | grep -qi python && { warn "a relposned_monitor is already running outside tmux — stop it first (pgrep -fl relposned_monitor)"; return 1; }   # [c] comm check: the tmux SERVER argv also contains the cmd string — do not false-positive on it
       local port="${RTK_PORT:-$(ls /dev/cu.usbmodem* 2>/dev/null | head -1)}"
       [ -z "$port" ] && warn "no /dev/cu.usbmodem* found — plug in the rover, or set RTK_PORT"
       local ndev; ndev=$(ls /dev/cu.usbmodem* 2>/dev/null | wc -l | tr -d ' ')
@@ -254,7 +254,10 @@ case "$CMD" in
     sync_time_via_tunnel        # [c] clock sanity before any timed start
     if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; start_one files; fi
     # [c] print the concrete dashboard URLs (Yi 2026-08-03) — AP address first
-    _ip="$(ipconfig getifaddr bridge100 2>/dev/null || ipconfig getifaddr en0 2>/dev/null || echo 192.168.2.1)"
+    # [c] prefer the AP bridge; a 169.254.* self-assigned addr is useless to the
+    # laptop (seen on mac-02) → fall back to the fleet AP address
+    _ip="$(ipconfig getifaddr bridge100 2>/dev/null || ipconfig getifaddr en0 2>/dev/null || true)"
+    case "${_ip:-}" in ''|169.254.*) _ip=192.168.2.1 ;; esac
     say "Dashboards — open on the laptop (joined to this mini's Wi-Fi):"
     ok "RTK position:   http://$_ip:${RX_WEBPORT:-8000}"
     ok "RX PSD viewer:  http://$_ip:${PSD_WEBPORT:-8081}   (newest PSD, auto-refresh)"
