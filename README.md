@@ -33,7 +33,7 @@ Day-to-day scripts (see [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)):
 |---|---|---|
 | `field-000-jobs.sh` | mini | RTK monitor + USRP RX→SSD + PSD viewer + file browser in detached tmux |
 | `field-001-psd-web.py` | mini | newest-PSD browser view on :8081 (job `psd` of field-000) |
-| `field-020-empty-rx-data.sh` | mini | wipe the RX captures — 3 typed confirmations |
+| `field-020-empty-rx-data.sh` | mini | wipe RX captures — pick records to keep (Enter = newest), one confirm |
 | `field-010-update-repos.sh` | mini | git pull LRLocal-V2 + USRP + RTK repos + this kit through the operator tunnel (FT232 excluded) |
 | `host-000-ssh-config.sh` | laptop | `ssh ddh-mac-0X` / `ssh ddh-pi4-beacon` shortcuts + reverse SOCKS forward + host-key quieting |
 | `pi-000-hotspot.sh` | TX Raspberry Pi | field Wi-Fi AP `ddh-pi4-beacon` @ `192.168.3.1` + SSH — doesn't touch the USRP TX setup |

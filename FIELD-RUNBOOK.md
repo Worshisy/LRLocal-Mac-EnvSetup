@@ -208,7 +208,7 @@ over-current protection (seen 2026-08-03: `over-current change` storms, radio
 firmware load fails → no LED, service flaps). Put the radio on a **powered USB
 hub** (or a full B210 on its DC supply) before adding the RTK board.
 
-## 5. Empty the RX capture data (3 typed confirmations)
+## 5. Empty the RX capture data (pick what to keep)
 
 When the capture SSD fills up (a full disk kills the rx job AND git pulls):
 ```sh
@@ -216,7 +216,7 @@ When the capture SSD fills up (a full disk kills the rx job AND git pulls):
 ```
 It resolves the RX data dir (`RX_DATA_DIR`/`run.conf OUT`/`USRP_study_yishen/data`,
 also reachable via the `<kit-parent>/rx-data` symlink), refuses while the rx job
-is running, lists every item with sizes, then requires **three typed answers**
-(`yes` → the item count → `DELETE`) before removing the contents. Offload
+is running, lists every record with its size, asks which to **KEEP**
+(Enter = newest only · `1,3` = your pick · `0` = none), then one y/N confirm. Offload
 anything you want to keep first (§2 rsync / [field-ops §6](docs/field-ops.md)).
 

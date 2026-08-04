@@ -90,7 +90,8 @@ rsync -avzP ddh-mac-0X:rx-data/  ~/field-data/
 (For bulk IQ, plug in direct Ethernet — the AP is 2.4/5 GHz Wi-Fi and slow.)
 
 Capture SSD full (rx job dead, git pulls failing with "No space left")? After
-offloading, wipe the captures on the mini — takes **3 typed confirmations**:
+offloading, wipe captures on the mini — lists records, you pick what to KEEP
+(Enter = newest), one y/N confirm:
 ```sh
 ~/LRLocal-Mac-EnvSetup/field-020-empty-rx-data.sh
 ```

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# field-020-empty-rx-data.sh — DELETE all RX capture data on this Mac (mini), after
-# THREE typed confirmations. Interactive only; nothing is removed until all
-# three pass, and any wrong answer aborts immediately.
+# field-020-empty-rx-data.sh — DELETE RX capture records on this Mac (mini).
+# Lists every record with its size, asks which to KEEP (Enter = the newest
+# record only; numbers like 1,3 for your own pick; 0 = keep none), then one
+# y/N confirmation. Interactive only; nothing is removed before the confirm.
 #
 # Target: the RX data dir, resolved as (first hit wins)
 #   1. RX_DATA_DIR=/path            explicit override
@@ -52,34 +53,50 @@ if [ -n "$TMUX_BIN" ] && "$TMUX_BIN" has-session -t rx 2>/dev/null; then
 fi
 
 # ── show exactly what would be deleted ───────────────────────────────────────
-say "RX data dir: $DATA_DIR"
-N_ITEMS="$(ls -A "$DATA_DIR" 2>/dev/null | wc -l | tr -d ' ')"
-[ "$N_ITEMS" = "0" ] && { ok "already empty — nothing to delete."; exit 0; }
-TOTAL="$(du -sh "$DATA_DIR" 2>/dev/null | awk '{print $1}')"
-echo
-du -sh "$DATA_DIR"/* 2>/dev/null | sort -rh | head -25 | sed 's/^/    /'
-[ "$N_ITEMS" -gt 25 ] && echo "    … ($((N_ITEMS-25)) more)"
-echo
-warn "This will PERMANENTLY delete the $N_ITEMS item(s) above — $TOTAL total."
-warn "The dir itself is kept; only its contents go."
+# ── [c] list the records (chronological), then pick what to KEEP + 1 confirm
+# (Yi 2026-08-03: old 3-typed-answer flow too complicated)
+say "RX data records in: $DATA_DIR"
+N=0
+for e in $(ls -A "$DATA_DIR" 2>/dev/null | sort); do N=$((N+1)); REC_NAMES="${REC_NAMES:-} $e"; done
+[ "$N" = 0 ] && { ok "already empty — nothing to delete."; exit 0; }
+i=1
+for e in $REC_NAMES; do
+  sz="$(du -sh "$DATA_DIR/$e" 2>/dev/null | cut -f1)"
+  mark=""; [ "$i" = "$N" ] && mark="   ← newest"
+  printf '  %2d) %-24s %6s%s\n' "$i" "$e" "$sz" "$mark"
+  i=$((i+1))
+done
+echo "      total: $(du -sh "$DATA_DIR" 2>/dev/null | cut -f1) in $N record(s)"
 
-# ── confirmation 1/3: yes ────────────────────────────────────────────────────
-printf '\n  [1/3] Delete ALL RX data listed above? Type  yes  : '
-read -r a1; [ "$a1" = "yes" ] || abort "confirmation 1 not 'yes'."
+printf '\n  Records to KEEP  [Enter = newest only · numbers e.g. 1,3 · 0 = keep none]: '
+read -r keep_in
+KEEP=" "
+if [ -z "$keep_in" ]; then KEEP=" $N "
+elif [ "$keep_in" != "0" ]; then
+  for k in $(echo "$keep_in" | tr ',' ' '); do
+    case "$k" in ''|*[!0-9]*) abort "'$k' is not a record number" ;; esac
+    { [ "$k" -ge 1 ] && [ "$k" -le "$N" ]; } || abort "no record $k (valid: 1–$N)"
+    KEEP="$KEEP$k "
+  done
+fi
+DEL_NAMES=""; KEEP_NAMES=""; NDEL=0
+i=1
+for e in $REC_NAMES; do
+  case "$KEEP" in
+    *" $i "*) KEEP_NAMES="$KEEP_NAMES $e" ;;
+    *)        DEL_NAMES="$DEL_NAMES $e"; NDEL=$((NDEL+1)) ;;
+  esac
+  i=$((i+1))
+done
+[ "$NDEL" = 0 ] && { ok "nothing selected for deletion."; exit 0; }
+DELSZ="$(cd "$DATA_DIR" && du -sch $DEL_NAMES 2>/dev/null | tail -1 | cut -f1)"
+warn "will PERMANENTLY delete $NDEL record(s), $DELSZ — keeping:${KEEP_NAMES:- nothing}"
+printf '  confirm? [y/N]: '
+read -r a; case "$a" in [yY]*) ;; *) abort "not confirmed." ;; esac
 
-# ── confirmation 2/3: type the item count (proves the summary was read) ──────
-printf '  [2/3] How many items will be deleted? Type  %s  : ' "$N_ITEMS"
-read -r a2; [ "$a2" = "$N_ITEMS" ] || abort "confirmation 2 mismatch."
-
-# ── confirmation 3/3: DELETE ─────────────────────────────────────────────────
-printf '  [3/3] Last chance — type  DELETE  (uppercase) : '
-read -r a3; [ "$a3" = "DELETE" ] || abort "confirmation 3 not 'DELETE'."
-
-# ── do it ────────────────────────────────────────────────────────────────────
 say "Deleting…"
 BEFORE="$(df -h "$DATA_DIR" | awk 'NR==2{print $4}')"
-# contents only; find -mindepth 1 avoids the dir itself and hidden-file globs
-find "$DATA_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+for e in $DEL_NAMES; do rm -rf "$DATA_DIR/$e"; done
 AFTER="$(df -h "$DATA_DIR" | awk 'NR==2{print $4}')"
-ok "emptied $DATA_DIR  (free space: $BEFORE → $AFTER)"
+ok "deleted $NDEL record(s)  (free space: $BEFORE → $AFTER)"
 say "Done."
