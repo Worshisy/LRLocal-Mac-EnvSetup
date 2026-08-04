@@ -51,6 +51,9 @@ TMUX_BIN="$(command -v tmux || true)"
 if [ -n "$TMUX_BIN" ] && "$TMUX_BIN" has-session -t rx 2>/dev/null; then
   abort "the rx capture job is RUNNING — stop it first:  $HERE/field-000-jobs.sh stop rx"
 fi
+# [c] also catch a capture running OUTSIDE tmux (seen on mac-02, 2026-08-03)
+pgrep -f rx_to_ssd >/dev/null 2>&1 \
+  && abort "an rx_to_ssd capture is RUNNING outside tmux (pgrep -fl rx_to_ssd) — stop it first"
 
 # ── show exactly what would be deleted ───────────────────────────────────────
 # ── [c] list the records (chronological), then pick what to KEEP + 1 confirm
