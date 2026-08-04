@@ -94,7 +94,10 @@ done
 [ "$NDEL" = 0 ] && { ok "nothing selected for deletion."; exit 0; }
 DELSZ="$(cd "$DATA_DIR" && du -sch $DEL_NAMES 2>/dev/null | tail -1 | cut -f1)"
 warn "will PERMANENTLY delete $NDEL record(s), $DELSZ — keeping:${KEEP_NAMES:- nothing}"
+# [c] 3 quick inputs total (selection + y + y), each a single key (Yi 2026-08-03)
 printf '  confirm? [y/N]: '
+read -r a; case "$a" in [yY]*) ;; *) abort "not confirmed." ;; esac
+printf '  sure?    [y/N]: '
 read -r a; case "$a" in [yY]*) ;; *) abort "not confirmed." ;; esac
 
 say "Deleting…"
