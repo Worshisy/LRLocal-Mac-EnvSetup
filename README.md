@@ -22,7 +22,7 @@ Apple git + Xcode CLT, system `python3`, **no** Homebrew / conda yet.
 | 000 | `setup-000-all.sh` | orchestrator — runs steps 010→060 in order |
 | 010 | `setup-010-base-tools.sh` | Xcode Command Line Tools (+ optional Homebrew/libusb — conda has its own) |
 | 020 | `setup-020-usrp-conda-env.sh` | **Miniconda** + the single `usrp` conda env — **all tools** (`env/usrp-env.yml`) |
-| 030 | `setup-030-clone-repos.sh` | clone the 4 project repos (+ `rx-data` symlink); asks GitHub auth if not yet logged in |
+| 030 | `setup-030-clone-repos.sh` | clone the 4 project repos (+ `rx-data` symlink + seeds the workspace `../AGENTS.md`); asks GitHub auth if not yet logged in |
 | 040 | `setup-040-ssh-remote.sh` | **SSH** (Remote Login) + **Screen Sharing** (VNC) + reverse-SOCKS proxy helpers |
 | 050 | `setup-050-gr-filerepeater.sh` | builds the **gr-filerepeater** OOT module into the `usrp` env (GRC flowgraph blocks) |
 | 060 | `setup-060-hotspot.sh` | **Headless field Wi-Fi AP** — standalone AP @ `192.168.2.1` for SSH in the field ([docs/field-setup.md](docs/field-setup.md)) |

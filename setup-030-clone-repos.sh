@@ -84,6 +84,18 @@ if [ -d "$WORKSPACE/USRP_study_yishen/.git" ]; then
   fi
 fi
 
+# [c] seed the workspace-level AGENTS.md (top-level map + agent conventions)
+# next to the repos — only if absent: the installed copy is a LIVING handoff
+# doc that agents append to, so never overwrite it on re-runs
+KIT_PARENT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ ! -f "$KIT_PARENT/AGENTS.md" ]; then
+  cp "$(dirname "${BASH_SOURCE[0]}")/workspace-AGENTS.md" "$KIT_PARENT/AGENTS.md" \
+    && ok "workspace AGENTS.md seeded at $KIT_PARENT/AGENTS.md" \
+    || warn "couldn't seed workspace AGENTS.md"
+else
+  ok "workspace AGENTS.md already present (left as-is — it's a living doc)"
+fi
+
 # [c] convenience symlink next to this kit → the RX capture data dir, so
 # captures are always at <kit-parent>/rx-data regardless of where the repos
 # were cloned (e.g. rsync ddh-mac-0X:rx-data/ from the laptop, when kit is in ~)
