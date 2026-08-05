@@ -78,9 +78,16 @@ and installs `kit` (cd there) and `gitpull` (run `field-010`) into `~/.zshrc`.
 ## 4. Driving a mini from an agent session
 
 Password prompts need a TTY, so an agent needs key auth: append the operator's
-public key to `~/.ssh/authorized_keys` on the mini once (as of 2026-08-05 only
-**units 02 and 03** have this — 02 added 2026-08-03, verified BatchMode — plus
-the TX Pi; 01/04–06 do not).
+public key to `~/.ssh/authorized_keys` on the mini once. **`authorized_keys` is
+per operator machine** — a unit reachable from the Mac is not automatically
+reachable from the Windows PC, so state which key you mean:
+
+| Operator machine | Key present on |
+|---|---|
+| Windows PC (`yi-shen-lggram16-field-ops`) | units **02, 03** — both verified with `BatchMode=yes` on 2026-08-05 |
+| Mac laptop | units 02, 03 + the TX Pi (per the Mac session, 2026-08-03) |
+
+Units 01, 04–06 have neither.
 
 ```sh
 ssh -o BatchMode=yes ddh-mac-03 'cd "$LRKIT" && git log --oneline -1'
@@ -125,6 +132,30 @@ it calls host-000 through Git Bash and then repairs:
    account modify it. OpenSSH does **not** permission-check `-F` files, so a
    `ProxyCommand` planted there runs as the operator with no warning.
    Tightening it needs an elevated run.
+
+**`icacls` trap that locked the operator out (2026-08-05).** Never push
+`(OI)(CI)` grants onto files:
+
+```powershell
+icacls C:\ssh /inheritance:r /grant:r "user:(OI)(CI)F" ... /T   # BREAKS child FILES
+```
+
+`(OI)(CI)` are *container* inheritance flags. With `/T`, `icacls` strips each
+child file's inherited ACEs, cannot apply container-flagged grants to a file,
+and reports **success** while leaving the file with an **empty DACL** — nobody,
+not even the owner, can read it, and ssh dies with `Can't open user config
+file …: Permission denied`. Correct form: flag the directory only (no `/T`),
+then let children inherit.
+
+```powershell
+icacls C:\ssh /inheritance:r /grant:r "user:(OI)(CI)F" "SYSTEM:(OI)(CI)F" "Administrators:(OI)(CI)F"
+icacls C:\ssh\* /reset /T
+```
+
+Recovery, if it already happened: `takeown /f <dir> /r /d y` (elevated) makes
+you the owner, and an owner can always rewrite a DACL — then `icacls <file>
+/reset` restores inherited rights. `host-001` now verifies readability after
+every ACL change and reverts itself if the file became unreadable.
 
 ## 6. State as of 2026-08-05
 

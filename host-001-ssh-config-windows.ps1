@@ -48,6 +48,38 @@ function Invoke-Native {
     finally { $ErrorActionPreference = $prev }
 }
 
+# [c] The CONSOLE user, not $env:USERNAME. Elevating with "Run as administrator"
+# can hand you a different admin account, and granting that one instead locks the
+# real operator out of their own ssh config.
+function Get-OperatorAccount {
+    try { $u = (Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).UserName } catch { $u = $null }
+    if (-not $u) { $u = "$env:USERDOMAIN\$env:USERNAME" }
+    return $u
+}
+
+# [c] Can the operator still READ this file? Every ACL change here is followed by
+# this check - see Set-OwnerOnlyAcl for why a "successful" icacls can still lock
+# the file. Reads as the current process; good enough, the caller is the operator.
+function Test-Readable ($path) {
+    try { $null = Get-Content -LiteralPath $path -TotalCount 1 -ErrorAction Stop; return $true }
+    catch { return $false }
+}
+
+# [c] Tighten a FILE. Never pass (OI)(CI) here: those are container-inheritance
+# flags, and icacls applied to a file reports success while leaving an EMPTY DACL
+# - the file becomes unreadable even by its owner, and ssh dies with
+# "Can't open user config file ...: Permission denied". Learned the hard way,
+# 2026-08-05, on C:\ssh\ssh_config.txt. Verifies, and reverts to inheritance if
+# the result is unreadable.
+function Set-OwnerOnlyAcl ($path, $account) {
+    $r = Invoke-Native icacls @($path, '/inheritance:r', '/grant:r', "${account}:F", 'SYSTEM:F', 'Administrators:F')
+    if ($r.Code -ne 0) { return $false }
+    if (Test-Readable $path) { return $true }
+    $null = Invoke-Native icacls @($path, '/reset')     # fall back to inherited rights
+    Warn "tightening $path made it unreadable - reverted to inherited permissions"
+    return (Test-Readable $path)
+}
+
 # ── 1. Run host-000 through Git Bash ─────────────────────────────────────────
 if (-not $SkipHost000) {
     $bash = @(
@@ -71,11 +103,10 @@ if (-not (Test-Path $userCfg)) { throw "no $userCfg - run host-000-ssh-config.sh
 # ── 2. Lock down ~/.ssh/config so Windows OpenSSH will read it ────────────────
 # [c] owner + SYSTEM + Administrators only; any other grant (inherited Users /
 # Authenticated Users) makes ssh.exe abort before it parses a single line.
-Say "Fixing ACLs on $userCfg"
-$r = Invoke-Native icacls @($userCfg, '/inheritance:r', '/grant:r',
-        "$($env:USERNAME):F", 'SYSTEM:F', 'Administrators:F')
-if ($r.Code -eq 0) { Ok "owner-only (this is what host-000's mktemp+mv resets every run)" }
-else { Warn "icacls failed (exit $($r.Code)) - ssh.exe will refuse this config"; exit 1 }
+$acct = Get-OperatorAccount
+Say "Fixing ACLs on $userCfg (granting $acct)"
+if (Set-OwnerOnlyAcl $userCfg $acct) { Ok "owner-only (this is what host-000's mktemp+mv resets every run)" }
+else { Warn "could not make $userCfg owner-only AND readable - ssh.exe will refuse it"; exit 1 }
 
 # ── 3. Follow an `ssh -F <file>` wrapper, if the profile defines one ──────────
 # [c] Two OpenSSH gotchas make the naive Include fail silently, both learned the
@@ -130,10 +161,19 @@ if (-not $wrapperCfg) {
         if (-not $loose) {
             Ok "$dir already owner-only"
         } else {
+            # [c] (OI)(CI) on the DIRECTORY only, and NO /T - see Set-OwnerOnlyAcl:
+            # container flags pushed onto child files leave them with an empty DACL.
+            # Children are then made to inherit the parent's clean ACL via /reset.
             $r = Invoke-Native icacls @($dir, '/inheritance:r', '/grant:r',
-                    "$($env:USERNAME):(OI)(CI)F", 'SYSTEM:(OI)(CI)F', 'Administrators:(OI)(CI)F', '/T')
-            if ($r.Code -eq 0) {
+                    "${acct}:(OI)(CI)F", 'SYSTEM:(OI)(CI)F', 'Administrators:(OI)(CI)F')
+            if ($r.Code -eq 0) { $null = Invoke-Native icacls @("$dir\*", '/reset', '/T') }
+            if ($r.Code -eq 0 -and (Test-Readable $wrapperCfg)) {
                 Ok "locked down $dir (was writable by every local account)"
+            } elseif ($r.Code -eq 0) {
+                $null = Invoke-Native icacls @($dir, '/inheritance:e')
+                $null = Invoke-Native icacls @("$dir\*", '/reset', '/T')
+                Warn "locking $dir made $wrapperCfg unreadable - reverted. Fix by hand:"
+                Warn "  takeown /f $dir /r /d y   (elevated), then re-run this script"
             } else {
                 # [c] icacls needs ownership; a dir created by an installer or under
                 # C:\ often is not owned by you. Do NOT claim success here - an
