@@ -128,10 +128,27 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
 
 ## 4. SSH shortcuts + internet for an offline field mini (`host-000-ssh-config.sh`)
 
-One-time **on the operator machine** (your laptop / lab Mac — not the mini):
+One-time **on the operator machine** (your laptop / lab box — not the mini).
+The operator side runs on **macOS or Windows**; pick the matching entry point:
+
 ```sh
-./host-000-ssh-config.sh      # installs ssh shortcuts ddh-mac-01 … ddh-mac-06
+./host-000-ssh-config.sh      # macOS (or Git Bash): shortcuts ddh-mac-01 … ddh-mac-06
 ```
+```powershell
+powershell -ExecutionPolicy Bypass -File .\host-001-ssh-config-windows.ps1
+```
+On Windows, run **host-001** rather than host-000 directly: it calls host-000
+through Git Bash and then fixes three things that only bite there, each of
+which fails *silently or misleadingly* if skipped —
+
+| Windows-only trap | Symptom | What host-001 does |
+|---|---|---|
+| host-000 rewrites `~/.ssh/config` via `mktemp`+`mv`, so it inherits group ACLs (`chmod 600` means nothing on NTFS) | `Bad owner or permissions on C:\Users\…/.ssh/config`, ssh exits 255 | `icacls /inheritance:r`, owner + SYSTEM + Administrators only |
+| a PowerShell profile wrapping ssh — `function ssh { & ssh.exe -F "C:\ssh\ssh_config.txt" @args }` — makes `-F` win over `~/.ssh/config` | `Could not resolve hostname ddh-mac-03`, as if the block were never written | detects the wrapper and adds `Include` to that file, **above the first `Host` block** and with **forward slashes** (`Include` is `glob()`ed and glob eats `\`) |
+| a `-F` config outside `~/.ssh` (e.g. `C:\ssh`) inherits `C:\`'s ACL; OpenSSH does not permission-check `-F` files | none — but every local account can add a `ProxyCommand`, i.e. run code as you | tightens that directory; warns loudly (needs an elevated re-run) if it can't |
+
+Re-run host-001 after any `git pull` that touches host-000 — the ACL reset is
+not a one-time fix.
 After that, `ssh ddh-mac-0X` = `ddh-macmini4-0X@192.168.2.1` and every
 connection carries `RemoteForward 1080` — a **reverse SOCKS proxy** so the
 otherwise-offline mini can reach the internet **through the operator's

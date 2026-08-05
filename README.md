@@ -35,7 +35,8 @@ Day-to-day scripts (see [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md)):
 | `field-001-psd-web.py` | mini | newest-PSD browser view on :8081 (job `psd` of field-000) |
 | `field-020-empty-rx-data.sh` | mini | wipe RX captures — pick records to keep (Enter = newest), one confirm |
 | `field-010-update-repos.sh` | mini | git pull LRLocal-V2 + USRP + RTK repos + this kit through the operator tunnel (FT232 excluded) |
-| `host-000-ssh-config.sh` | laptop | `ssh ddh-mac-0X` / `ssh ddh-pi4-beacon` shortcuts + reverse SOCKS forward + host-key quieting |
+| `host-000-ssh-config.sh` | laptop (macOS / Git Bash) | `ssh ddh-mac-0X` / `ssh ddh-pi4-beacon` shortcuts + reverse SOCKS forward + host-key quieting |
+| `host-001-ssh-config-windows.ps1` | laptop (Windows) | runs host-000, then the Windows-only fixes: config ACLs, an `ssh -F` profile wrapper, verification |
 | `pi-000-hotspot.sh` | TX Raspberry Pi | field Wi-Fi AP `ddh-pi4-beacon` @ `192.168.3.1` + SSH — doesn't touch the USRP TX setup |
 
 ### Environment design — ONE conda env for everything
