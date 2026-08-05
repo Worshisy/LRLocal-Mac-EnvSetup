@@ -21,7 +21,7 @@ operated headless in the field over per-unit Wi-Fi APs + SSH.
 
 | Repo | Language | Role | Read first |
 |---|---|---|---|
-| `LRLocal-Mac-EnvSetup/` | bash | **The ops kit.** Machine setup (`setup-0X0-*`), day-to-day field jobs (`field-0X0-*`), operator laptop config (`host-000-*`), Pi TX box config (`pi-000-*`). Cloned everything else. | `README.md`, `SETUP-RUNBOOK.md`, `FIELD-RUNBOOK.md` |
+| `LRLocal-Mac-EnvSetup/` | bash (+ PowerShell for Windows operators) | **The ops kit.** Machine setup (`setup-0X0-*`), day-to-day field jobs (`field-0X0-*`), operator laptop config (`host-00X-*`), Pi TX box config (`pi-000-*`). Cloned everything else. | its `AGENTS.md` (kit conventions + agent traps), `README.md`, `FIELD-RUNBOOK.md` |
 | `USRP_study_yishen/` | C++/CMake (UHD), some Python, FPGA/Verilog | USRP host apps. Key: `01-rx-to-ssd-b200-agc/` (the RX capture app: sw-AGC, sc12, PSD sidecars) and `11-tx-beacon-usrpb200-code/` (the TX beacon that runs on the Pi as systemd service `tx-beacon-b200mini`). `uhd/`+`gnuradio/` submodules = study source only. | its `AGENTS.md`, each project's `notes/run-steps-sy.md` |
 | `LRLocal-V2/` | MATLAB (`01-system-analysis-code/`, `02-field-detection-code/`), Python/Jupyter (`03-tag-template-gen-code/`) | The analysis & detection pipeline (Case B decimated FFT detector etc.). Needs MATLAB + Signal Processing + Parallel Computing toolboxes. | `START.md`, its `AGENTS.md` |
 | `RTK_dev_for_cm-loc/` | Python | RTK rover monitor: `relposned_monitor.py` (web dashboard :8000, per-session CSV/debug logs). | its `AGENTS.md` / README |
@@ -90,6 +90,10 @@ service, never-sleep. Clocks self-sync through the tunnel (no NTP off-grid).
 
 ## Handoff log (newest first — append here)
 
+- **2026-08-05 (field agent, mac-03 side):** kit hardening — field-010 one-key
+  overwrite flow (OVERWRITE=1 for no-tty), $LRKIT + `kit`/`gitpull` shortcuts
+  (setup-040 §3d), LF .gitattributes, Windows operator script (host-001), and
+  the kit-level AGENTS.md. Unit 03 fully current.
 - **2026-08-03 (Claude, operator Mac):** created this file. Fleet update swept
   (02✓ 03✓, 04–06 unreachable). Simplified capture-wipe flow. PSD viewer +
   file browser added as field jobs. Pi TX wedge diagnosed as USB power; fixed

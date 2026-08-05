@@ -8,6 +8,10 @@
 > Human docs stay authoritative: [README.md](README.md) (what the kit sets up),
 > [SETUP-RUNBOOK.md](SETUP-RUNBOOK.md) (build a fresh mini),
 > [FIELD-RUNBOOK.md](FIELD-RUNBOOK.md) (operate one in the field).
+> **Whole-project map** (all sibling repos — USRP C++ apps, MATLAB analysis,
+> RTK monitor — plus the deployed system and cross-repo handoff log): the
+> workspace-level **`../AGENTS.md`**, seeded from
+> [workspace-AGENTS.md](workspace-AGENTS.md) by `setup-030-clone-repos.sh`.
 
 ## 1. Who runs what, where
 
@@ -75,7 +79,8 @@ and installs `kit` (cd there) and `gitpull` (run `field-010`) into `~/.zshrc`.
 
 Password prompts need a TTY, so an agent needs key auth: append the operator's
 public key to `~/.ssh/authorized_keys` on the mini once (as of 2026-08-05 only
-**unit 03** has this; 01/02/04–06 do not).
+**units 02 and 03** have this — 02 added 2026-08-03, verified BatchMode — plus
+the TX Pi; 01/04–06 do not).
 
 ```sh
 ssh -o BatchMode=yes ddh-mac-03 'cd "$LRKIT" && git log --oneline -1'
