@@ -14,6 +14,7 @@
 #   REPO_BASE=/path ./field-010-update-repos.sh     # override repo autodetect
 #   WITH_SUBMODULES=1 ./field-010-update-repos.sh   # also update USRP uhd+gnuradio submodules (GBs)
 #   PROXY=socks5h://127.0.0.1:1081 ./field-010-update-repos.sh   # different tunnel port
+#   OVERWRITE=1 ./field-010-update-repos.sh         # pre-confirm the overwrite prompt (no-tty runs)
 set -u
 
 say()  { printf '\n\033[1;36m[update] %s\033[0m\n' "$*"; }
@@ -50,6 +51,35 @@ pick_route() {
   exit 1
 }
 
+# [c] One y/N confirm before discarding local work. Honoured only on a real
+# terminal; OVERWRITE=1 pre-confirms so no-tty runs (agent / `ssh host cmd`)
+# can opt in explicitly instead of silently destroying edits.
+confirm_overwrite() {  # $1 = repo name
+  local a
+  [ "${OVERWRITE:-0}" = "1" ] && { warn "OVERWRITE=1 — discarding local changes in $1"; return 0; }
+  [ -t 0 ] || { warn "  not a terminal — re-run interactively, or OVERWRITE=1 to discard"; return 1; }
+  printf '  overwrite %s with the GitHub version (local changes DISCARDED)? [y/N]: ' "$1"
+  read -r a; case "$a" in [yY]*) return 0 ;; *) warn "  not confirmed — left untouched"; return 1 ;; esac
+}
+
+# [c] Reset a repo to origin/main. Tracked edits go via reset --hard; untracked
+# blockers survive that, so remove exactly the paths git named — never a blanket
+# `git clean`, which would eat capture data sitting untracked inside a repo.
+overwrite_with_origin() {  # $1 = repo dir, $2 = failed pull output
+  local dir="$1" out="$2" p up
+  # [c] the tracking ref, not a hardcoded origin/main — not every repo's default
+  # branch is main, and a detached/renamed one would silently reset to the wrong tip
+  up="$(git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)" || up=origin/main
+  [ -n "$up" ] || up=origin/main
+  git -C "$dir" reset --hard "$up" >/dev/null 2>&1 && return 0
+  printf '%s\n' "$out" |
+    awk '/would be overwritten by/{f=1;next} /^[A-Za-z]/{f=0} f&&NF{sub(/^[[:space:]]+/,"");print}' |
+    while IFS= read -r p; do
+      [ -n "$p" ] && [ -e "$dir/$p" ] && rm -rf "$dir/$p" && warn "  removed untracked $p"
+    done
+  git -C "$dir" reset --hard "$up" >/dev/null 2>&1
+}
+
 update_one() {  # $1 = repo dir
   local dir="$1" name out rc before after dirty=""
   name="$(basename "$dir")"
@@ -66,10 +96,15 @@ update_one() {  # $1 = repo dir
     # content identical to origin/main = crash debris; different = real edits.
     if printf '%s' "$out" | grep -qE "untracked working tree files would be overwritten|Your local changes to the following files would be overwritten"; then
       warn "$name: blocked by local files — either real edits made on this Mac,"
-      warn "  or leftovers of a pull that died mid-checkout (disk full?). Triage:"
-      warn "  git -C $dir diff --stat origin/main   # empty/irrelevant = debris"
-      warn "  debris  → git -C $dir reset --hard origin/main    # DISCARDS them"
-      warn "  real    → git -C $dir stash -u && git -C $dir merge --ff-only origin/main && git -C $dir stash pop"
+      warn "  or leftovers of a pull that died mid-checkout (disk full?). What differs:"
+      git -C "$dir" --no-pager diff --stat 2>/dev/null | sed 's/^/      /'
+      if confirm_overwrite "$name" && overwrite_with_origin "$dir" "$out"; then
+        after="$(git -C "$dir" rev-parse --short HEAD 2>/dev/null)"
+        ok "$name: $before → $after  (overwritten with the GitHub version)"
+        return 0
+      fi
+      warn "  keep the local work instead:"
+      warn "  git -C $dir stash -u && git -C $dir merge --ff-only origin/main && git -C $dir stash pop"
     fi
     return 1
   fi
