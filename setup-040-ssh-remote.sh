@@ -7,6 +7,7 @@
 # refused, grant the Terminal app "Full Disk Access" in
 # System Settings ▸ Privacy & Security ▸ Full Disk Access, then re-run.
 set -u
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # [c] kit dir — pinned into the shortcuts below
 
 say()  { printf '\n\033[1;36m[40] %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
@@ -92,6 +93,30 @@ else
   warn "sudoers rule failed validation — clock sync needs interactive sudo instead"
 fi
 rm -f /tmp/lrlocal-timesync
+
+# ── 3d. Kit shortcuts — run the field scripts from any directory ──────────────
+# [c] The kit is cloned wherever there's room, which on most minis is the
+# capture SSD (/Volumes/USRP0X/LRLocal-Mac-EnvSetup), NOT $HOME — so a bare
+# `field-010-update-repos.sh` finds nothing and the runbook's `~/LRLocal-…`
+# path doesn't exist. Pin the location found at install time (Yi, 2026-08-05).
+say "Installing kit shortcuts (kit / gitpull) into ~/.zshrc"
+KIT_PREFIX='# >>> LRLocal kit shortcuts'
+KIT_END='# <<< LRLocal kit shortcuts <<<'
+TMP="$(mktemp)"
+awk -v b="$KIT_PREFIX" -v e="$KIT_END" \
+    'index($0,b)==1{skip=1} skip==0{print} index($0,e)==1{skip=0}' "$ZRC" > "$TMP"
+mv "$TMP" "$ZRC"
+# [c] unquoted heredoc: $HERE must expand NOW; \$LRKIT stays literal so the
+# aliases keep working if the kit is later moved and LRKIT re-exported.
+cat >> "$ZRC" <<EOF
+$KIT_PREFIX (managed by LRLocal-Mac-EnvSetup/setup-040-ssh-remote.sh) >>>
+# The kit usually lives on the capture SSD, not \$HOME — these work from anywhere.
+export LRKIT="$HERE"
+alias kit='cd "\$LRKIT"'                                 # jump to the kit
+alias gitpull='"\$LRKIT"/field-010-update-repos.sh'       # update all repos (needs the operator tunnel)
+$KIT_END
+EOF
+ok "kit / gitpull in ~/.zshrc → $HERE (new shells; or:  source ~/.zshrc)"
 
 # ── 4. How to reach this Mac ──────────────────────────────────────────────────
 say "Connection info — give this to whoever connects"

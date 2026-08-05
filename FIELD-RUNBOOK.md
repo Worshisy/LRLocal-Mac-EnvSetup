@@ -139,6 +139,8 @@ machine**. On the mini (helpers installed by step 040 into `~/.zshrc`):
 ```sh
 gitp pull        # git through the proxy (per-invocation; nothing persists)
 proxyon          # proxy this whole shell: curl / brew / git … (proxyoff to undo)
+gitpull          # update every repo + the kit, from any directory (see below)
+kit              # cd to the kit — $LRKIT, since it lives on the capture SSD on most minis
 ```
 It also quiets the fleet host-key warning for `192.168.2.1`. The block is
 idempotent (managed markers in `~/.ssh/config`); the rest of your config is
@@ -148,10 +150,22 @@ opens the same tunnel. pip/conda need `pysocks` installed to use a SOCKS proxy.
 To update **everything at once** (LRLocal-V2 + USRP + RTK repos + this kit, all
 ff-only through the tunnel; FT232_SCAN_IO deliberately excluded):
 ```sh
-~/LRLocal-Mac-EnvSetup/field-010-update-repos.sh
+gitpull                                   # alias from step 040 — works from any directory
+"$LRKIT"/field-010-update-repos.sh        # same thing, spelled out
 ```
-Repos with local commits/changes are never merged — they're reported for you
-to resolve. `WITH_SUBMODULES=1` also updates USRP's uhd+gnuradio source (GBs).
+The kit is **not** in `$HOME` on most minis — it's cloned onto the capture SSD
+(`/Volumes/USRP0X/LRLocal-Mac-EnvSetup`), which is why a bare script name finds
+nothing. Step 040 pins that path as `$LRKIT` and adds `gitpull` / `kit`; if a
+mini predates this, run `./setup-040-ssh-remote.sh` once from the kit directory,
+or fall back to `cd /Volumes/USRP0X/LRLocal-Mac-EnvSetup && ./field-010-update-repos.sh`.
+
+A repo with local edits blocks its `--ff-only` pull. The script now prints what
+differs and asks **once** whether to overwrite it with the GitHub version
+(`reset --hard origin/main`, discarding those edits); answer anything but `y`
+and it's left untouched with the stash-instead recipe. In a no-tty run
+(`ssh host 'gitpull'`, cron) there's no prompt — pass `OVERWRITE=1` to
+pre-confirm, otherwise it just reports and exits 1.
+`WITH_SUBMODULES=1` also updates USRP's uhd+gnuradio source (GBs).
 
 ## 4b. TX Raspberry Pi in the field (`pi-000-hotspot.sh`)
 

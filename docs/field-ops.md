@@ -103,10 +103,11 @@ SOCKS proxy** (`RemoteForward 1080`): traffic the mini sends to
 `localhost:1080` exits via **your laptop's** internet. On the mini:
 
 ```sh
-gitp -C ~/LRLocal-Mac-EnvSetup pull   # gitp = git through the proxy (alias from step 040)
+gitp -C "$LRKIT" pull                 # gitp = git through the proxy (alias from step 040)
 proxyon                               # or: proxy everything in this shell (curl/brew/pip…)
 proxyoff
-~/LRLocal-Mac-EnvSetup/field-010-update-repos.sh   # or: update ALL repos + the kit in one go (ff-only)
+gitpull                               # update ALL repos + the kit in one go (ff-only), from any dir
+kit                                   # cd to the kit ($LRKIT — the SSD, not $HOME, on most minis)
 ```
 
 Connected without the shortcut? `ssh -R 1080 ddh-macmini4-0X@192.168.2.1`
