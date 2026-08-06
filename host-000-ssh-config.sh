@@ -56,6 +56,11 @@ Host ddh-mac-06
 Host ddh-pi4-beacon
     HostName 192.168.3.1
     User user
+    # [c] push this PC's clock to the Pi on every connection (no NTP off-grid;
+    # covers the no-internet case — the Pi-side tunnel sync handles the rest).
+    # Gated at >=2 s drift; inner ssh disables LocalCommand to avoid recursion.
+    PermitLocalCommand yes
+    LocalCommand /bin/sh -c 'e=\$(( \$(date +%%s) + 1 )); ssh -o PermitLocalCommand=no -o ClearAllForwardings=yes ddh-pi4-beacon "d=\\\$(( \\\$(date +%%s) - \$e )); [ \\\${d#-} -ge 2 ] && sudo -n date -us @\$e" >/dev/null 2>&1 &'
 
 Host ddh-mac-0* ddh-pi4-beacon 192.168.2.1 192.168.3.1
     RemoteForward 1080

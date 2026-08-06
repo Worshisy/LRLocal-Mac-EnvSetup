@@ -159,6 +159,39 @@ every ACL change and reverts itself if the file became unreadable.
 
 ## 6. State as of 2026-08-05
 
+Changed 2026-08-05 evening (Claude, uncommitted `# [c]` edits — Yi to review):
+
+- `field-000-jobs.sh` — new **`beacon` job** (5th job, in start-all/stop):
+  runs `USRP_study_yishen/02-rx-beacon-verify/repeat-check.sh run-fg` in tmux
+  — beacon-RX verifier, quick every `BEACON_QUICK_MIN` (5) min + full every
+  `BEACON_FULL_MIN` (60) min; results → `<volume>/beacon-checks/` (in the
+  :8082 browser). RX-safety verified live on mac-02 (150 MB/s capture,
+  ovf=0 throughout). Needs numpy on the mini (`02-rx-beacon-verify/
+  setup-env.sh`; offline wheel-drop recipe in its header — done on mac-02).
+  FIELD-RUNBOOK §3 documents the job. **Running on mac-02 now** (tmux session
+  `beacon` via this script — tmux lives in the conda usrp env; `command -v
+  tmux` in a bare ssh shell misses it, the script's fallback finds it).
+  One real gotcha: processes nohup'd from a bare ssh shell get TCC EPERM
+  writing /Volumes/USRP02 (agent trap — the tmux/field-000 path writes fine,
+  see 02's existing capture dirs). Also observed: mini APs on 02/05 broadcast
+  SSID `ddh-macmini4-0X` (not `macmini-field-0X`), and with both APs known,
+  macOS auto-roams between them — both answer at 192.168.2.1, so ssh
+  "connection closed" usually means you're on the other mini's AP.
+
+- `pi-000-hotspot.sh` — Pi time-sync overhaul: shared `~/bin/lrl-timesync.sh`
+  (bashrc login hook now a thin wrapper) + a `~/.ssh/rc` hook so the internet
+  sync fires on EVERY ssh/scp connection (10-min throttle; rc stays silent —
+  stdout there corrupts scp). Plus a web file browser on `:8082` serving `~`
+  (cron `@reboot` + 5-min ensure-alive; no sudo for systemd on the Pi). Both
+  applied live on the beacon Pi and verified (HTTP listing OK; sync drift 1 s).
+- `host-000-ssh-config.sh` — the Pi host block now carries `PermitLocalCommand`
+  + `LocalCommand`: every operator ssh **pushes the PC's clock** to the Pi
+  (≥2 s drift gate, recursion-guarded) — covers the no-internet field case.
+  Heredoc escaping verified by sandbox-running the script and diffing against
+  the live, tested config. Live-applied to Yi's operator Mac.
+  Why all this: the Pi clock ran 17–21 h behind on 08-05 and scrambled the
+  log-timeline analysis of the beacon TX incident (see workspace AGENTS 05c).
+
 Changed this session (`d03a605`, `acf2eab`, `a91605e`, `29b1798`):
 
 - `field-010-update-repos.sh` — a repo whose local edits block the `--ff-only`

@@ -14,6 +14,9 @@
 #   rx    — USRP_study_yishen/01-rx-to-ssd-b200-agc/run.sh (continuous RX → SSD, AGC)
 #   psd   — newest-PSD web viewer (field-001-psd-web.py) at http://<mini>:8081
 #   files — web file browser over the capture volume at http://<mini>:8082
+#   beacon— beacon-RX verifier loop (USRP_study_yishen/02-rx-beacon-verify):
+#           quick check every 5 min + full check hourly; PASS/WARN/FAIL +
+#           figures land in <volume>/beacon-checks/ (see the :8082 browser)
 #
 # Usage:
 #   ./field-000-jobs.sh start [JOB]        # start all four, or just one
@@ -22,10 +25,11 @@
 #   ./field-000-jobs.sh data <rtk|rtk-debug># tail -f the newest rtk SESSION data
 #                                          #   (relposned_<stamp>.csv / .debug.log)
 #   ./field-000-jobs.sh status             # what's running (+ newest rtk session)
-#   ./field-000-jobs.sh stop   [JOB]       # stop all, or one   (JOB = rtk|rx|psd|files)
+#   ./field-000-jobs.sh stop   [JOB]       # stop all, or one   (JOB = rtk|rx|psd|files|beacon)
 # Override autodetect:  REPO_BASE=/path  RTK_PORT=/dev/cu.usbmodemXXXX  RX_WEBPORT=8000
 #                        RX_FREQ=2.55     (pre-answers the freq prompt; GHz, or ≥1e6 = Hz)
 #                        RX_START=18:30|now  RX_START_TZ=utc  (pre-answer the start-time prompt)
+#                        BEACON_QUICK_MIN=5 BEACON_FULL_MIN=60  (beacon check cadence)
 set -u
 
 CMD="${1:-help}"; TARGET="${2:-}"
@@ -216,6 +220,19 @@ start_one() {
       [ -z "$vol" ] && { warn "no capture volume (/Volumes/USRP* or \$CAPTURE_VOL)"; return 1; }
       "$TMUX_BIN" new-session -d -s files "$(wrap "$vol" "python3 -u -m http.server ${FILES_WEBPORT:-8082} -d $vol" "$LOGDIR/files.log")"
       ok "file browser started → http://<this-mac-ip>:${FILES_WEBPORT:-8082}  (browsing $vol)" ;;
+    beacon)
+      # [c] beacon-RX verifier repeat loop (Yi task3 2026-08-05): quick check
+      # every BEACON_QUICK_MIN (default 5) min + full check every
+      # BEACON_FULL_MIN (default 60) min, against the newest live capture.
+      # Results + history.csv → <capture volume>/beacon-checks/ (browse them
+      # in the :8082 file browser). Needs numpy on this mini — see
+      # 02-rx-beacon-verify/setup-env.sh if the start warns.
+      [ -z "$RX_DIR" ] && { warn "USRP_study_yishen not found (set REPO_BASE)"; return 1; }
+      local vdir="${RX_DIR%/01-rx-to-ssd-b200-agc}/02-rx-beacon-verify"
+      [ -d "$vdir" ] || { warn "02-rx-beacon-verify missing — pull USRP_study_yishen first"; return 1; }
+      "$TMUX_BIN" has-session -t beacon 2>/dev/null && { ok "beacon checks already running"; return 0; }
+      "$TMUX_BIN" new-session -d -s beacon "$(wrap "$vdir" "./repeat-check.sh run-fg ${BEACON_QUICK_MIN:-5} ${BEACON_FULL_MIN:-60}" "$LOGDIR/beacon.log")"
+      ok "beacon checks started (quick ${BEACON_QUICK_MIN:-5} min / full ${BEACON_FULL_MIN:-60} min) → <volume>/beacon-checks/" ;;
     psd)
       # [c] newest-PSD browser view (Yi 2026-08-03): quick check of what the
       # rx capture is seeing, from the laptop at http://<mini-ip>:8081
@@ -252,7 +269,7 @@ case "$CMD" in
     need_tmux; need_conda
     say "Starting field jobs in tmux (survive SSH disconnect)"
     sync_time_via_tunnel        # [c] clock sanity before any timed start
-    if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; start_one files; fi
+    if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; start_one files; start_one beacon; fi
     # [c] print the concrete dashboard URLs (Yi 2026-08-03) — AP address first
     # [c] prefer the AP bridge; a 169.254.* self-assigned addr is useless to the
     # laptop (seen on mac-02) → fall back to the fleet AP address
@@ -262,6 +279,7 @@ case "$CMD" in
     ok "RTK position:   http://$_ip:${RX_WEBPORT:-8000}"
     ok "RX PSD viewer:  http://$_ip:${PSD_WEBPORT:-8081}   (newest PSD, auto-refresh)"
     ok "File browser:   http://$_ip:${FILES_WEBPORT:-8082}   (whole capture volume)"
+    ok "Beacon checks:  http://$_ip:${FILES_WEBPORT:-8082}/beacon-checks/   (PASS/WARN/FAIL history + figs)"
     say "Reconnect later, then:  ./field-000-jobs.sh attach rx   (or rtk) ·  ./field-000-jobs.sh logs rx" ;;
   attach)
     need_tmux; [ -z "$TARGET" ] && { warn "which? ./field-000-jobs.sh attach rx|rtk"; exit 1; }
@@ -299,7 +317,7 @@ case "$CMD" in
   stop)
     need_tmux
     if [ -n "$TARGET" ]; then "$TMUX_BIN" kill-session -t "$TARGET" 2>/dev/null && ok "stopped $TARGET" || warn "no session $TARGET";
-    else for s in rtk rx psd files; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
+    else for s in rtk rx psd files beacon; do "$TMUX_BIN" kill-session -t "$s" 2>/dev/null && ok "stopped $s"; done; fi ;;
   *)
     # [c] print the whole header comment block (stops at the first non-# line,
     # so it survives header growth — the old fixed 2,30p range leaked code)

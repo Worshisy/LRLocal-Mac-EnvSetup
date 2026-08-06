@@ -78,6 +78,16 @@ physically attached there. Your laptop just SSHes in. The two jobs are:
 - `files` — web file browser over the whole capture volume (`/Volumes/USRPX`)
   at **`http://192.168.2.1:8082`** (`FILES_WEBPORT=…`) — check/download anything
   in the field without rsync
+- `beacon` — beacon-RX verifier loop (`USRP_study_yishen/02-rx-beacon-verify`):
+  a **quick** check (~1 s: bursts on the 25 ms grid? dechirp SNR? preamble =
+  the real Gold sequence?) every 5 min + a **full** 20 s check (per-packet
+  preamble health, PSD, chirp fade map) hourly, always a safe margin behind
+  the live rx writer, `nice -19` (verified: no rx overflows). Verdict lines
+  append to `<volume>/beacon-checks/history.csv`; per-check `summary.txt` +
+  figures in `<volume>/beacon-checks/<UTC>-<mode>/` — browse them via the
+  :8082 file browser. Cadence: `BEACON_QUICK_MIN=… BEACON_FULL_MIN=…`.
+  One-shots without the loop: `02-rx-beacon-verify/run-check.sh quick|full`.
+  Needs numpy (once per mini): `02-rx-beacon-verify/setup-env.sh`.
 
 RTK session data records into **`RTK_dev_for_cm-loc/data/<UTC>/`** per session
 (same UTC naming as the rx capture dirs); `data rtk` finds the newest

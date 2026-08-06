@@ -94,6 +94,64 @@ else
   warn "sudoers rule failed validation — login sync will only report drift"
 fi
 rm -f /tmp/lrlocal-timesync
+
+# ── [c] shared time-sync script + every-ssh-connection hook ──────────────────
+# lrl-timesync.sh is called by BOTH the interactive login hook in .bashrc
+# (with -f = always fetch) and ~/.ssh/rc on every ssh/scp connection
+# (throttled to one attempt / 10 min, silent). The no-internet case is covered
+# from the operator side: host-000's LocalCommand pushes the PC clock on every
+# connection (gated at >=2 s drift), so internet sync here + host push there
+# together keep the Pi clock honest in all field conditions.
+mkdir -p "$HOME/bin" "$HOME/.ssh" "$HOME/field-logs"
+cat > "$HOME/bin/lrl-timesync.sh" <<'TSYNC'
+#!/bin/bash
+# tunnel time-sync — shared by the interactive login hook (bashrc, -f) and the
+# every-ssh-connection hook (~/.ssh/rc, throttled). Source: internet Date
+# header via the operator's reverse SOCKS tunnel. No internet? The operator
+# side pushes its own clock instead (host-000 LocalCommand) — not our job.
+STAMP=/tmp/.lrl-timesync-attempt
+(exec 3<>/dev/tcp/127.0.0.1/1080) 2>/dev/null || { echo "[time] no tunnel — clock unchecked"; exit 0; }
+if [ "$1" != "-f" ] && [ -e "$STAMP" ]; then
+  age=$(( $(date +%s) - $(stat -c %Y "$STAMP" 2>/dev/null || echo 0) ))
+  [ "$age" -ge 0 ] && [ "$age" -lt 600 ] && { echo "[time] attempted <10 min ago — skipped"; exit 0; }
+fi
+touch "$STAMP"
+hdr=$(curl -sI -m 4 -x socks5h://127.0.0.1:1080 https://www.google.com 2>/dev/null | sed -n 's/^[Dd]ate: //p' | tr -d '\r')
+[ -z "$hdr" ] && { echo "[time] tunnel up but time fetch failed — clock unchecked (host push covers this)"; exit 0; }
+rs=$(date -ud "$hdr" +%s 2>/dev/null) || exit 0
+drift=$(( rs - $(date +%s) ))
+if [ "${drift#-}" -lt 2 ]; then echo "[time] clock OK (drift ${drift}s vs internet)"
+elif sudo -n date -us "@$rs" >/dev/null 2>&1; then echo "[time] clock was ${drift}s off — SYNCED via tunnel"; touch "$STAMP"
+else echo "[time] clock ${drift}s off — couldn't set; run:  sudo date -us @$rs"
+fi
+TSYNC
+chmod +x "$HOME/bin/lrl-timesync.sh"
+cat > "$HOME/.ssh/rc" <<'SSHRC'
+# LRLocal: opportunistic clock sync on EVERY ssh connection (the operator's
+# ssh always carries the reverse tunnel). MUST stay silent — any stdout here
+# corrupts scp/sftp. Backgrounded so sessions are never delayed.
+( "$HOME/bin/lrl-timesync.sh" >/dev/null 2>&1 & )
+SSHRC
+chmod 600 "$HOME/.ssh/rc"
+ok "time-sync: ~/bin/lrl-timesync.sh + ~/.ssh/rc hook (fires on every ssh/scp)"
+
+# ── [c] web file browser over $HOME at :8082 (like the minis' "files" job) ───
+# No passwordless sudo for systemd units on the Pi → cron-supervised instead
+# (@reboot + a 5-min ensure-alive guard; self-heals after crashes too).
+cat > "$HOME/bin/lrl-filebrowser-ensure.sh" <<'FBROW'
+#!/bin/bash
+# keep the :8082 web file browser alive (cron-driven; serves $HOME, read-only)
+pgrep -f "http.server 8082" >/dev/null && exit 0
+mkdir -p /home/user/field-logs
+setsid -f bash -c "exec python3 -u -m http.server 8082 -d /home/user >> /home/user/field-logs/files.log 2>&1"
+FBROW
+chmod +x "$HOME/bin/lrl-filebrowser-ensure.sh"
+( crontab -l 2>/dev/null | grep -v lrl-filebrowser ; \
+  echo "@reboot sleep 20 && $HOME/bin/lrl-filebrowser-ensure.sh" ; \
+  echo "*/5 * * * * $HOME/bin/lrl-filebrowser-ensure.sh" ) | crontab -
+"$HOME/bin/lrl-filebrowser-ensure.sh"
+ok "file browser: http://$AP_IP:8082 (cron-kept-alive, serving \$HOME)"
+
 BRC="$HOME/.bashrc"; touch "$BRC"
 PIH_PREFIX='# >>> LRLocal field pi helpers'
 PIH_END='# <<< LRLocal field pi helpers <<<'
@@ -136,20 +194,10 @@ tx_status() {  # health summary, then LIVE TX output (like attach) — Ctrl-C ex
   echo "── live TX output (Ctrl-C to exit; full snapshot: $proj/deploy/tx-status.sh) ──"
   journalctl -fu tx-beacon-b200mini.service -n 15
 }
-# [c] clock sync at login — no NTP off-grid; rides the operator tunnel when an
-# `ssh ddh-pi4-beacon` session carries one. Instant skip if no tunnel listener.
-_lrl_timesync() {
-  local hdr rs drift
-  (exec 3<>/dev/tcp/127.0.0.1/1080) 2>/dev/null || { echo "[time] no tunnel — clock unchecked"; return 0; }
-  hdr=$(curl -sI -m 4 -x socks5h://127.0.0.1:1080 https://www.google.com 2>/dev/null | sed -n 's/^[Dd]ate: //p' | tr -d '\r')
-  [ -z "$hdr" ] && { echo "[time] tunnel up but time fetch failed — clock unchecked"; return 0; }
-  rs=$(date -ud "$hdr" +%s 2>/dev/null) || return 0
-  drift=$(( rs - $(date +%s) ))
-  if [ "${drift#-}" -lt 2 ]; then echo "[time] clock OK (drift ${drift}s vs internet)"
-  elif sudo -n date -us "@$rs" >/dev/null 2>&1; then echo "[time] clock was ${drift}s off — SYNCED via tunnel"
-  else echo "[time] clock ${drift}s off — couldn't set; run:  sudo date -us @$rs"
-  fi
-}
+# [c] clock sync at login — thin wrapper; the real logic lives in
+# ~/bin/lrl-timesync.sh, shared with the ~/.ssh/rc every-connection hook
+# (installed above). -f = skip the 10-min throttle, like the old behavior.
+_lrl_timesync() { "$HOME/bin/lrl-timesync.sh" -f; }
 alias tx_restart='sudo systemctl restart tx-beacon-b200mini.service && sleep 2 && pgrep -af tx_beacon_b200 | grep -o "\-\-freq [^ ]*" | sed "s/^/tx-beacon restarted → /"'
 alias pi_restart='sudo shutdown -r now'   # AP + TX come back on their own (~1 min)
 case $- in *i*) _lrl_timesync; cat <<'MENU'
@@ -161,6 +209,7 @@ Pi field shortcuts:
   tx_status      health summary + LIVE TX output (Ctrl-C to exit)
   tx_restart     restart the TX beacon service (re-reads run.conf)
   pi_restart     reboot the whole Pi (AP + TX auto-return in ~1 min)
+  (web)          file browser at http://192.168.3.1:8082 — logs/captures in ~
 MENU
 esac   # time-synced + printed at every login — no command to remember
 # <<< LRLocal field pi helpers <<<
