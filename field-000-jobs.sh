@@ -268,7 +268,12 @@ case "$CMD" in
   start)
     need_tmux; need_conda
     say "Starting field jobs in tmux (survive SSH disconnect)"
-    sync_time_via_tunnel        # [c] clock sanity before any timed start
+    # [c] GPS-first one-shot clock sync (rtk-010): step BEFORE any job starts so
+    # host<->GPS keeps one fixed relationship all session (link: rtk-011).
+    # No receiver / no fix -> HTTPS-Date tunnel fallback. RTK_SYNC=skip bypasses.
+    if [ "${RTK_SYNC:-}" != skip ]; then
+      bash "$(cd "$(dirname "$0")" && pwd)/rtk-010-gps-sync-once.sh" || sync_time_via_tunnel
+    fi
     if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; start_one files; start_one beacon; fi
     # [c] print the concrete dashboard URLs (Yi 2026-08-03) — AP address first
     # [c] prefer the AP bridge; a 169.254.* self-assigned addr is useless to the
