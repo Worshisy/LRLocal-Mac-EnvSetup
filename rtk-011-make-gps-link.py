@@ -60,10 +60,13 @@ with open(csv_path) as f:
 if not rows:
     sys.exit(f"no parseable rows in {csv_path}")
 
-# straight-line fit offset(t): measures the host oscillator drift (ppm)
+# straight-line fit offset(t): measures the host oscillator drift (ppm).
+# Skip the first 10 s — at logger connect the receiver drains queued epochs in
+# a burst (several epochs share one arrival time), which poisons the fit.
 t0 = rows[0][0]
-xs = [r[0] - t0 for r in rows]
-ys = [r[3] for r in rows]
+fit_rows = [r for r in rows if r[0] - t0 >= 10.0] or rows
+xs = [r[0] - t0 for r in fit_rows]
+ys = [r[3] for r in fit_rows]
 n = len(xs)
 mx, my = sum(xs) / n, sum(ys) / n
 den = sum((x - mx) ** 2 for x in xs) or 1.0
@@ -72,7 +75,8 @@ intercept = my - slope * mx
 med = sorted(ys)[n // 2]
 
 with open(out_path, "w") as out:
-    out.write(f"# source: {os.path.basename(csv_path)}  rows: {n}\n")
+    out.write(f"# source: {os.path.basename(csv_path)}  rows: {len(rows)} "
+              f"(fit on {n} rows past the 10 s startup burst)\n")
     out.write(f"# offset_ms = host_utc - gps_utc (positive = host ahead); "
               f"GPS-UTC leap {GPS_UTC_LEAP_S} s already removed\n")
     out.write(f"# median_offset_ms {med:.1f}  fit: offset_ms(t) = {intercept:.2f} "

@@ -61,33 +61,44 @@ def pvt_utc(payload):
     return (datetime(year, month, day, hour, minute, sec,
                      tzinfo=timezone.utc).timestamp() + nano * 1e-9)
 
+def report(t_gps, t_host):
+    print(f"GPSUTC {datetime.fromtimestamp(t_gps, timezone.utc).isoformat()} "
+          f"OFFSET_MS {round((t_host - t_gps) * 1e3)}")
+    sys.exit(0)
+
 buf = b""
 with serial.Serial(port, 38400, timeout=1) as s:
     while time.time() < deadline:
-        buf += s.read(4096)
-        # NMEA lines
+        chunk = s.read(4096)
+        t_host = time.time()          # arrival stamp for anything completed now
+        buf += chunk
+        # UBX first — extract complete frames DESTRUCTIVELY, so the NMEA line
+        # splitter below never shreds binary frames on stray 0x0A bytes.
+        while True:
+            i = buf.find(b"\xb5\x62")
+            if i < 0 or len(buf) < i + 8:
+                break
+            cls_id, msg_id = buf[i + 2], buf[i + 3]
+            ln = struct.unpack_from("<H", buf, i + 4)[0]
+            if ln > 2048:                       # false sync inside noise
+                buf = buf[i + 2:]
+                continue
+            if len(buf) < i + 6 + ln + 2:
+                break
+            payload = buf[i + 6: i + 6 + ln]
+            buf = buf[:i] + buf[i + 6 + ln + 2:]
+            if (cls_id, msg_id) == (0x01, 0x07):
+                t_gps = pvt_utc(payload)
+                if t_gps:
+                    report(t_gps, t_host)
+        # NMEA on the UBX-free residue
         while b"\n" in buf:
             line, buf = buf.split(b"\n", 1)
-            t_host = time.time()
             txt = line.decode("ascii", "ignore").strip()
             if len(txt) > 6 and txt[0] == "$" and txt[3:6] == "RMC":
                 t_gps = rmc_utc(txt)
                 if t_gps:
-                    print(f"GPSUTC {datetime.fromtimestamp(t_gps, timezone.utc).isoformat()} "
-                          f"OFFSET_MS {round((t_host - t_gps) * 1e3)}")
-                    sys.exit(0)
-        # UBX NAV-PVT frames in whatever remains
-        i = buf.find(b"\xb5\x62\x01\x07")
-        if i >= 0 and len(buf) >= i + 6:
-            ln = struct.unpack_from("<H", buf, i + 4)[0]
-            if len(buf) >= i + 6 + ln + 2:
-                t_host = time.time()
-                t_gps = pvt_utc(buf[i + 6: i + 6 + ln])
-                buf = buf[i + 6 + ln + 2:]
-                if t_gps:
-                    print(f"GPSUTC {datetime.fromtimestamp(t_gps, timezone.utc).isoformat()} "
-                          f"OFFSET_MS {round((t_host - t_gps) * 1e3)}")
-                    sys.exit(0)
+                    report(t_gps, t_host)
 sys.exit(1)
 PYEOF
 )"
