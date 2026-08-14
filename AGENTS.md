@@ -210,3 +210,16 @@ Outstanding:
 - Unit 03 is current (`29b1798`), clean, and needs nothing.
 - `/Volumes/USRP03` was at 539 GiB free (72% used) and falling during captures;
   a full disk is what kills a pull mid-checkout.
+
+## 2026-08-14 — GPS-first clock sync + link file (Claude, authored on mac-05)
+
+- `rtk-010-gps-sync-once.sh` — one-shot host-clock step from the RTK receiver
+  (RMC/NAV-PVT), run by `field-000-jobs.sh start` BEFORE any job; never re-steps,
+  so host↔GPS stays one fixed relationship per session. Falls back to
+  `sync_time_via_tunnel` when no receiver/fix. `RTK_SYNC=skip` bypasses. Macs
+  only — the Pi keeps its ssh-hook sync.
+- `rtk-011-make-gps-link.py` — writes `gps_host_link.csv` (offset + drift fit)
+  from a session relposned csv; rx chain and rtk logger untouched.
+- Commit 0ea6b10 exists ONLY on mac-05 (minis off-grid); push to origin from an
+  internet-connected node, then propagate to 02/06 (bundle) after the outdoor
+  GPS test on mac-05 validates the fix path.
