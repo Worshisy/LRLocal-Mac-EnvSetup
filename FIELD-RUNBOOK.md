@@ -118,6 +118,10 @@ ssh ddh-macmini4-0X@192.168.2.1            # into the slave (X = the mini's numb
   The prompt shows the machine's current time.
   Pre-answer with `RX_FREQ=2.55 RX_START=18:30 … field-000-jobs.sh start`
   (`RX_START=now` skips the prompt; `RX_START_TZ=utc` for UTC times).
+  **A scheduled start delays ONLY the rx capture binary** (it sleeps inside its
+  tmux session): rtk + dashboard + session recording, psd, files, and beacon
+  all run from the moment you run `start`. `status` marks a waiting rx as
+  "ARMED but NOT capturing yet" with the target time.
 - Every `start` also **checks the mini's clock through the operator tunnel**
   (HTTPS Date header — no NTP off-grid) and syncs it when it's ≥ 2 s off, so
   deferred starts fire at the right wall-clock time (passwordless via the

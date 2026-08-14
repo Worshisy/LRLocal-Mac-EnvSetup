@@ -309,6 +309,12 @@ case "$CMD" in
     exec tail -f "$_f" ;;
   status)
     need_tmux; say "tmux sessions"; "$TMUX_BIN" ls 2>/dev/null || echo "  (none)"
+    # [c] a deferred rx shows as 'running' in tmux — say it's actually WAITING
+    # (only the capture binary waits; rtk/psd/files/beacon run from start)
+    if "$TMUX_BIN" has-session -t rx 2>/dev/null; then
+      _s="$(grep -E 'scheduled start at|woke at' "$LOGDIR/rx.log" 2>/dev/null | tail -1)"
+      case "$_s" in *'scheduled start at'*) warn "rx is ARMED but NOT capturing yet — ${_s#*\] }" ;; esac
+    fi
     say "logs in $LOGDIR"; ls -la "$LOGDIR" 2>/dev/null
     # [c] newest rtk session data pair + CSV row count
     _rd="$(rtk_data_dir)"; _csv=""; [ -n "$_rd" ] && _csv="$(newest_rtk "$_rd" .csv)"
