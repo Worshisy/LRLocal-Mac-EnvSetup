@@ -223,3 +223,11 @@ Outstanding:
 - Commit 0ea6b10 exists ONLY on mac-05 (minis off-grid); push to origin from an
   internet-connected node, then propagate to 02/06 (bundle) after the outdoor
   GPS test on mac-05 validates the fix path.
+
+## 2026-08-15 — Remote desktop on M4 field minis (Claude)
+
+Headless Apple-Silicon (M4) minis: generic VNC renders BLACK; use **Screen Sharing.app**
+(Mac) and **RustDesk** direct-IP (Windows). Full runbook + gotchas (dummy plug required,
+"Screen Sharing is not permitted" = must enable via System Settings GUI not CLI, RM vs
+Screen Sharing conflict, persist-on-disconnect via console session):
+**docs/remote-desktop-m4.md**. mac-02 set up live 2026-08-14/15 (RustDesk ID 429722566).
