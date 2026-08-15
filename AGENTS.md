@@ -231,3 +231,14 @@ Headless Apple-Silicon (M4) minis: generic VNC renders BLACK; use **Screen Shari
 "Screen Sharing is not permitted" = must enable via System Settings GUI not CLI, RM vs
 Screen Sharing conflict, persist-on-disconnect via console session):
 **docs/remote-desktop-m4.md**. mac-02 set up live 2026-08-14/15 (RustDesk ID 429722566).
+
+## 2026-08-15 — MATLAB + offline software installs on the minis (Claude)
+
+MATLAB R2026a + Signal/Parallel/Comm/Stats toolboxes installed on mac-02
+(/Applications/MATLAB_R2026a.app, `matlab` CLI linked; Yi activated online).
+Runbook + gotchas in **docs/matlab-offline-install.md** — key facts: minis have
+no internet, so use `mpm download` on the operator + `mpm install --source` on
+the mini (offline); mpm/CFNetwork apps IGNORE env-var proxies and the minis
+cannot take a system proxy (AP bridge, no default route) — do not try, and do
+not set persistent system proxies on minis. Same operator-download pattern for
+VS Code (+offline .vsix extensions) and RustDesk.
