@@ -30,6 +30,7 @@
 #                        RX_FREQ=2.55     (pre-answers the freq prompt; GHz, or ≥1e6 = Hz)
 #                        RX_START=18:30|now  RX_START_TZ=utc  (pre-answer the start-time prompt)
 #                        BEACON_QUICK_MIN=5 BEACON_FULL_MIN=60  (beacon check cadence)
+#                        UPDATE_REPOS=1|0   (repo check at start: 1 = pull without asking, 0 = skip check)
 set -u
 
 CMD="${1:-help}"; TARGET="${2:-}"
@@ -158,6 +159,52 @@ sync_time_via_tunnel() {
   fi
 }
 
+# [c] Repo freshness gate at every `start` (Yi 2026-08-15): mac-06 ran a
+# 9-day-old monitor and its dashboard silently lacked the new stats panel.
+# Compare each repo's local HEAD to the GitHub tip via `git ls-remote`
+# through the operator tunnel (refs only — no objects, one round-trip per
+# repo), then offer to run field-010-update-repos.sh. Enter/N = start with
+# what's installed. UPDATE_REPOS=1 pre-answers yes (works no-tty too);
+# UPDATE_REPOS=0 skips the check. Tunnel down → skip quietly; the check must
+# NEVER block a field start. After an update this very script may have been
+# replaced, so re-exec the fresh copy with SKIP_REPO_CHECK=1 (the function
+# body is fully parsed before it runs, so self-replacement can't corrupt it).
+check_repo_updates() {
+  [ "${SKIP_REPO_CHECK:-0}" = "1" ] && return 0
+  [ "${UPDATE_REPOS:-}" = "0" ] && return 0
+  local kit proxy stale="" name dir lh rh ans r
+  kit="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  proxy="${PROXY:-socks5h://127.0.0.1:1080}"
+  curl -fsS -m 5 -x "$proxy" https://github.com >/dev/null 2>&1 \
+    || { warn "repo check skipped — tunnel not up ($proxy)"; return 0; }
+  # shellcheck disable=SC2046  # find_dir output word-split intentionally (no spaces in repo paths)
+  for dir in "$kit" $(for r in LRLocal-V2 USRP_study_yishen RTK_dev_for_cm-loc; do find_dir "$r" || true; done); do
+    [ -d "$dir/.git" ] || continue
+    name="$(basename "$dir")"
+    lh="$(git -C "$dir" rev-parse HEAD 2>/dev/null)"
+    rh="$(git -C "$dir" -c "http.proxy=$proxy" ls-remote origin HEAD 2>/dev/null | awk '{print $1; exit}')"
+    [ -z "$rh" ] && { warn "$name: couldn't query origin — skipping"; continue; }
+    [ "$lh" = "$rh" ] || stale="$stale$name "
+  done
+  [ -z "$stale" ] && { ok "repos match GitHub (checked via tunnel)"; return 0; }
+  warn "repo(s) differ from GitHub: $stale"
+  if [ "${UPDATE_REPOS:-}" = "1" ]; then ans=y
+  elif [ -t 0 ]; then
+    printf '  run field-010-update-repos.sh now (ff-only pulls)? [y/N]: '
+    read -r ans
+  else
+    warn "no tty — starting with installed versions (pre-answer with UPDATE_REPOS=1)"
+    return 0
+  fi
+  case "$ans" in
+    [yY]*)
+      PROXY="$proxy" "$kit/field-010-update-repos.sh" || warn "update reported failures — continuing"
+      say "re-running start with the updated kit"
+      exec env SKIP_REPO_CHECK=1 "$0" "$CMD" ${TARGET:+"$TARGET"} ;;
+    *) ok "starting with installed versions" ;;
+  esac
+}
+
 # [c] after the freq prompt, ask an optional deferred start (run.sh --start).
 # Enter = start now. HH:MM local; a past time = tomorrow (confirmed here, and
 # run.sh auto-defers non-interactively since its stdin is /dev/null in tmux).
@@ -274,6 +321,7 @@ case "$CMD" in
     if [ "${RTK_SYNC:-}" != skip ]; then
       bash "$(cd "$(dirname "$0")" && pwd)/rtk-010-gps-sync-once.sh" || sync_time_via_tunnel
     fi
+    check_repo_updates          # [c] repo freshness gate — offers field-010 (Yi 2026-08-15)
     if [ -n "$TARGET" ]; then start_one "$TARGET"; else start_one rtk; start_one rx; start_one psd; start_one files; start_one beacon; fi
     # [c] print the concrete dashboard URLs (Yi 2026-08-03) — AP address first
     # [c] prefer the AP bridge; a 169.254.* self-assigned addr is useless to the
